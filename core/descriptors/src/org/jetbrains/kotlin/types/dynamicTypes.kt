@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.container.DefaultImplementation
 import org.jetbrains.kotlin.container.PlatformExtensionsClashResolver
 import org.jetbrains.kotlin.container.PlatformSpecificExtension
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.renderer.DescriptorRenderer
 import org.jetbrains.kotlin.renderer.DescriptorRendererOptions
@@ -60,4 +61,6 @@ class DynamicType(
     override fun replaceAnnotations(newAnnotations: Annotations): DynamicType = DynamicType(delegate.builtIns, newAnnotations)
 
     override fun render(renderer: DescriptorRenderer, options: DescriptorRendererOptions): String = "dynamic"
+
+    override fun refine(moduleDescriptor: ModuleDescriptor) = this
 }
