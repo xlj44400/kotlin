@@ -8,8 +8,9 @@ package org.jetbrains.kotlin.ir.types
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.types.Variance
+import org.jetbrains.kotlin.types.model.*
 
-interface IrType {
+interface IrType : KotlinTypeMarker {
     val annotations: List<IrCall>
 
     /**
@@ -27,15 +28,15 @@ interface IrType {
 
 interface IrErrorType : IrType
 
-interface IrDynamicType : IrType
+interface IrDynamicType : IrType, DynamicTypeMarker
 
-interface IrSimpleType : IrType {
+interface IrSimpleType : IrType, SimpleTypeMarker, TypeArgumentListMarker {
     val classifier: IrClassifierSymbol
     val hasQuestionMark: Boolean
     val arguments: List<IrTypeArgument>
 }
 
-interface IrTypeArgument {
+interface IrTypeArgument: TypeArgumentMarker {
     override fun equals(other: Any?): Boolean
 
     override fun hashCode(): Int
