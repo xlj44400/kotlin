@@ -535,14 +535,6 @@ class ExpressionCodegen(
         }
     }
 
-    override fun visitGetObjectValue(expression: IrGetObjectValue, data: BlockInfo): StackValue {
-        throw AssertionError("Instruction should've been lowered before code generation: ${expression.render()}")
-    }
-
-    override fun visitGetEnumValue(expression: IrGetEnumValue, data: BlockInfo): StackValue {
-        throw AssertionError("Instruction should've been lowered before code generation: ${expression.render()}")
-    }
-
     override fun visitSetVariable(expression: IrSetVariable, data: BlockInfo): StackValue {
         expression.markLineNumber(startOffset = true)
         expression.value.markLineNumber(startOffset = true)
@@ -567,7 +559,7 @@ class ExpressionCodegen(
     }
 
     override fun visitElement(element: IrElement, data: BlockInfo): StackValue {
-        TODO("not implemented for $element") //To change body of created functions use File | Settings | File Templates.
+        throw AssertionError("Instruction should've been lowered before code generation: ${element.render()}")
     }
 
     override fun visitClass(declaration: IrClass, data: BlockInfo): StackValue {
