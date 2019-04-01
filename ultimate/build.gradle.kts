@@ -15,6 +15,7 @@ evaluationDependsOn(":prepare:idea-plugin")
 val intellijUltimateEnabled : Boolean by rootProject.extra
 
 val springClasspath by configurations.creating
+val clionUnscrambledJarDir: File by rootProject.extra
 
 dependencies {
     if (intellijUltimateEnabled) {
@@ -41,6 +42,8 @@ dependencies {
     compile(project(":idea:idea-gradle")) { isTransitive = false }
     compile(project(":compiler:util")) { isTransitive = false }
     compile(project(":idea:idea-jps-common")) { isTransitive = false }
+    compile(project(":kotlin-ultimate:cidr-native")) { isTransitive = true }
+    compileOnly(fileTree(clionUnscrambledJarDir) { include("**/*.jar") })
     compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 
     if (intellijUltimateEnabled) {
@@ -182,6 +185,10 @@ val jar = runtimeJar(task<ShadowJar>("shadowJar")) {
     dependsOn(preparePluginXml)
     dependsOn("$communityPluginProject:shadowJar")
     val communityPluginJar = project(communityPluginProject).configurations["runtimeJar"].artifacts.files.singleFile
+    val tasksSet = project(":kotlin-ultimate:cidr-native").getTasksByName("jar", false)
+    val jarTask = tasksSet.iterator().next()
+    dependsOn(jarTask)
+    from(jarTask.inputs.files)
     from(zipTree(communityPluginJar), { exclude("META-INF/plugin.xml") })
     from(preparedResources, { include("META-INF/plugin.xml") })
     from(mainSourceSet.output)
