@@ -22,12 +22,12 @@ import org.jetbrains.kotlin.fir.resolve.buildUseSiteScope
 import org.jetbrains.kotlin.fir.resolve.getCallableSymbols
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
+import org.jetbrains.kotlin.fir.scopes.impl.FirClassSubstitutionScope
 import org.jetbrains.kotlin.fir.symbols.CallableId
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTagImpl
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
@@ -56,11 +56,12 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
 import org.jetbrains.kotlin.types.Variance
 
-class Fir2IrVisitor(
+internal class Fir2IrVisitor(
     private val session: FirSession,
     private val moduleDescriptor: FirModuleDescriptor,
     private val symbolTable: SymbolTable,
-    private val irBuiltIns: IrBuiltIns
+    private val irBuiltIns: IrBuiltIns,
+    private val fakeOverrideMode: FakeOverrideMode
 ) : FirVisitor<IrElement, Any?>() {
     companion object {
         private val KOTLIN = FqName("kotlin")
@@ -202,6 +203,41 @@ class Fir2IrVisitor(
     private fun FirClass.getPrimaryConstructorIfAny(): FirConstructor? =
         (declarations.firstOrNull() as? FirConstructor)?.takeIf { it.isPrimary }
 
+    private fun IrClass.addFakeOverrides(klass: FirClass, processedFunctionNames: MutableList<Name>) {
+        if (fakeOverrideMode == FakeOverrideMode.NONE) return
+        val superTypesFunctionNames = klass.collectFunctionNamesFromSupertypes()
+        val useSiteScope = (klass as? FirRegularClass)?.buildUseSiteScope(session) ?: return
+        for (name in superTypesFunctionNames) {
+            if (name in processedFunctionNames) continue
+            processedFunctionNames += name
+            useSiteScope.processFunctionsByName(name) { functionSymbol ->
+                // TODO: think about overloaded functions. May be we should process all names.
+                if (functionSymbol is FirFunctionSymbol) {
+                    val originalFunction = functionSymbol.fir as FirNamedFunction
+                    val origin = IrDeclarationOrigin.FAKE_OVERRIDE
+                    if (functionSymbol.isFakeOverride) {
+                        // Substitution case
+                        val irFunction = declarationStorage.getIrFunction(originalFunction, setParent = false, origin = origin)
+                        val baseSymbol = functionSymbol.overriddenSymbol
+                        declarations += irFunction.setParentByParentStack().withFunction {
+                            setFunctionContent(irFunction.descriptor, originalFunction, firOverriddenSymbol = baseSymbol)
+                        }
+                    } else if (fakeOverrideMode != FakeOverrideMode.SUBSTITUTION) {
+                        // Trivial fake override case
+                        val fakeOverrideSymbol = FirClassSubstitutionScope.createFakeOverride(session, originalFunction, functionSymbol)
+                        val fakeOverrideFunction = fakeOverrideSymbol.fir as FirNamedFunction
+
+                        val irFunction = declarationStorage.getIrFunction(fakeOverrideFunction, setParent = false, origin = origin)
+                        declarations += irFunction.setParentByParentStack().withFunction {
+                            setFunctionContent(irFunction.descriptor, fakeOverrideFunction, firOverriddenSymbol = functionSymbol)
+                        }
+                    }
+                }
+                ProcessorAction.STOP
+            }
+        }
+    }
+
     private fun IrClass.setClassContent(klass: FirClass) {
         for (superTypeRef in klass.superTypeRefs) {
             superTypes += superTypeRef.toIrType(session, declarationStorage)
@@ -211,8 +247,6 @@ class Fir2IrVisitor(
                 typeParameters += declarationStorage.getIrTypeParameter(typeParameter, index).setParentByParentStack()
             }
         }
-        val useSiteScope = (klass as? FirRegularClass)?.buildUseSiteScope(session)
-        val superTypesFunctionNames = klass.collectFunctionNamesFromSupertypes()
         declarationStorage.enterScope(descriptor)
         val primaryConstructor = klass.getPrimaryConstructorIfAny()
         val irPrimaryConstructor = primaryConstructor?.accept(this@Fir2IrVisitor, null) as IrConstructor?
@@ -230,46 +264,7 @@ class Fir2IrVisitor(
                     }
                 }
             }
-            for (name in superTypesFunctionNames) {
-                if (name in processedFunctionNames) continue
-                processedFunctionNames += name
-                useSiteScope?.processFunctionsByName(name) { functionSymbol ->
-                    if (functionSymbol is FirFunctionSymbol) {
-                        val originalFunction = functionSymbol.fir as FirNamedFunction
-
-                        val fakeOverrideSymbol = FirFunctionSymbol(functionSymbol.callableId, true)
-                        val fakeOverrideFunction = with(originalFunction) {
-                            // TODO: consider using here some light-weight functions instead of pseudo-real FirMemberFunctionImpl
-                            // As second alternative, we can invent some light-weight kind of FirRegularClass
-                            FirMemberFunctionImpl(
-                                this@Fir2IrVisitor.session, psi, fakeOverrideSymbol,
-                                name, receiverTypeRef, returnTypeRef
-                            ).apply {
-                                status = originalFunction.status as FirDeclarationStatusImpl
-                                valueParameters += originalFunction.valueParameters.map { valueParameter ->
-                                    with(valueParameter) {
-                                        FirValueParameterImpl(
-                                            this@Fir2IrVisitor.session, psi,
-                                            this.name, this.returnTypeRef,
-                                            defaultValue, isCrossinline, isNoinline, isVararg,
-                                            FirVariableSymbol(valueParameter.symbol.callableId)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        val irFunction = declarationStorage.getIrFunction(
-                            fakeOverrideFunction, setParent = false, origin = IrDeclarationOrigin.FAKE_OVERRIDE
-                        )
-                        declarations += irFunction.setParentByParentStack().withFunction {
-                            setFunctionContent(irFunction.descriptor, fakeOverrideFunction, firOverriddenSymbol = functionSymbol)
-                        }
-
-                    }
-                    ProcessorAction.STOP
-                }
-            }
+            addFakeOverrides(klass, processedFunctionNames)
             klass.annotations.forEach {
                 annotations += it.accept(this@Fir2IrVisitor, null) as IrCall
             }

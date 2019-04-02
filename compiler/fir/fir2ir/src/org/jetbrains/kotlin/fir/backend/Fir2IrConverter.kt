@@ -23,7 +23,8 @@ object Fir2IrConverter {
     fun createModuleFragment(
         session: FirSession,
         firFiles: List<FirFile>,
-        languageVersionSettings: LanguageVersionSettings
+        languageVersionSettings: LanguageVersionSettings,
+        fakeOverrideMode: FakeOverrideMode = FakeOverrideMode.NORMAL
     ): IrModuleFragment {
         val moduleDescriptor = FirModuleDescriptor(session)
         val symbolTable = SymbolTable()
@@ -32,7 +33,7 @@ object Fir2IrConverter {
         constantValueGenerator.typeTranslator = typeTranslator
         typeTranslator.constantValueGenerator = constantValueGenerator
         val builtIns = IrBuiltIns(moduleDescriptor.builtIns, typeTranslator, symbolTable)
-        val fir2irTransformer = Fir2IrVisitor(session, moduleDescriptor, symbolTable, builtIns)
+        val fir2irTransformer = Fir2IrVisitor(session, moduleDescriptor, symbolTable, builtIns, fakeOverrideMode)
         val irFiles = mutableListOf<IrFile>()
         for (firFile in firFiles) {
             irFiles += firFile.accept(fir2irTransformer, null) as IrFile
