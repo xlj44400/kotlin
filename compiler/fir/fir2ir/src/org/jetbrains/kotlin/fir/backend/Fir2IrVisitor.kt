@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.fir.types.impl.FirResolvedTypeRefImpl
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
+import org.jetbrains.kotlin.ir.builders.primitiveOp1
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
@@ -54,7 +55,9 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
+import org.jetbrains.kotlin.types.AbstractStrictEqualityTypeChecker
 import org.jetbrains.kotlin.types.Variance
+import java.util.*
 
 internal class Fir2IrVisitor(
     private val session: FirSession,
@@ -65,6 +68,10 @@ internal class Fir2IrVisitor(
 ) : FirVisitor<IrElement, Any?>() {
     companion object {
         private val KOTLIN = FqName("kotlin")
+
+        private val NEGATED_OPERATIONS: Set<FirOperation> = EnumSet.of(FirOperation.NOT_EQ, FirOperation.NOT_IDENTITY)
+
+        private val UNARY_OPERATIONS: Set<FirOperation> = EnumSet.of(FirOperation.EXCL)
     }
 
     private val typeContext = session.typeContext
@@ -980,38 +987,85 @@ internal class Fir2IrVisitor(
         }
     }
 
+    private fun generateComparisonCall(
+        startOffset: Int, endOffset: Int, operation: FirOperation, first: FirExpression, second: FirExpression
+    ): IrExpression {
+        val firstType = first.typeRef as? FirResolvedTypeRef
+        val secondType = second.typeRef as? FirResolvedTypeRef
+        if (firstType == null || secondType == null) {
+            return IrErrorCallExpressionImpl(startOffset, endOffset, booleanType, "Comparison of arguments with unresolved types")
+        }
+        if (!AbstractStrictEqualityTypeChecker.strictEqualTypes(typeContext, firstType.type, secondType.type)) {
+            return IrErrorCallExpressionImpl(
+                startOffset, endOffset, booleanType,
+                "Comparison of arguments with different types: ${firstType.type.render()}, ${secondType.type.render()}"
+            )
+        }
+        // TODO: it's temporary hack which should be refactored
+        val simpleType = when (val classId = (firstType.type as? ConeClassLikeType)?.lookupTag?.classId) {
+            ClassId(FqName("kotlin"), FqName("Long"), false) -> irBuiltIns.builtIns.longType
+            ClassId(FqName("kotlin"), FqName("Int"), false) -> irBuiltIns.builtIns.intType
+            ClassId(FqName("kotlin"), FqName("Float"), false) -> irBuiltIns.builtIns.floatType
+            ClassId(FqName("kotlin"), FqName("Double"), false) -> irBuiltIns.builtIns.doubleType
+            else -> {
+                return IrErrorCallExpressionImpl(
+                    startOffset, endOffset, booleanType, "Comparison of arguments with unsupported type: $classId"
+                )
+            }
+        }
+        val (symbol, origin) = when (operation) {
+            FirOperation.LT -> irBuiltIns.lessFunByOperandType[simpleType] to IrStatementOrigin.LT
+            FirOperation.GT -> irBuiltIns.greaterFunByOperandType[simpleType] to IrStatementOrigin.GT
+            FirOperation.LT_EQ -> irBuiltIns.lessOrEqualFunByOperandType[simpleType] to IrStatementOrigin.LTEQ
+            FirOperation.GT_EQ -> irBuiltIns.greaterOrEqualFunByOperandType[simpleType] to IrStatementOrigin.GTEQ
+            else -> throw AssertionError("Unexpected comparison operation: $operation")
+        }
+        return IrBinaryPrimitiveImpl(
+            startOffset, endOffset, booleanType, origin, symbol!!,
+            first.toIrExpression(), second.toIrExpression()
+        )
+    }
+
+    private fun generateOperatorCall(
+        startOffset: Int, endOffset: Int, operation: FirOperation, arguments: List<FirExpression>
+    ): IrExpression {
+        if (operation in FirOperation.COMPARISONS) {
+            return generateComparisonCall(startOffset, endOffset, operation, arguments[0], arguments[1])
+        }
+        val (type, symbol, origin) = when (operation) {
+            FirOperation.EQ -> Triple(booleanType, irBuiltIns.eqeqSymbol, IrStatementOrigin.EQEQ)
+            FirOperation.NOT_EQ -> Triple(booleanType, irBuiltIns.eqeqSymbol, IrStatementOrigin.EXCLEQ)
+            FirOperation.IDENTITY -> Triple(booleanType, irBuiltIns.eqeqeqSymbol, IrStatementOrigin.EQEQEQ)
+            FirOperation.NOT_IDENTITY -> Triple(booleanType, irBuiltIns.eqeqeqSymbol, IrStatementOrigin.EXCLEQEQ)
+            FirOperation.EXCL -> Triple(booleanType, irBuiltIns.booleanNotSymbol, IrStatementOrigin.EXCL)
+            FirOperation.RANGE -> TODO()
+            FirOperation.IN -> TODO()
+            FirOperation.NOT_IN -> TODO()
+            FirOperation.LT, FirOperation.GT,
+            FirOperation.LT_EQ, FirOperation.GT_EQ,
+            FirOperation.OTHER, FirOperation.ASSIGN, FirOperation.PLUS_ASSIGN,
+            FirOperation.MINUS_ASSIGN, FirOperation.TIMES_ASSIGN,
+            FirOperation.DIV_ASSIGN, FirOperation.REM_ASSIGN,
+            FirOperation.IS, FirOperation.NOT_IS,
+            FirOperation.AS, FirOperation.SAFE_AS -> {
+                TODO("Should not be here: incompatible operation in FirOperatorCall: $operation")
+            }
+        }
+        val result = if (operation in UNARY_OPERATIONS) {
+            primitiveOp1(startOffset, endOffset, symbol, type, origin, arguments[0].toIrExpression())
+        } else {
+            IrBinaryPrimitiveImpl(
+                startOffset, endOffset, type, origin, symbol,
+                arguments[0].toIrExpression(), arguments[1].toIrExpression()
+            )
+        }
+        if (operation !in NEGATED_OPERATIONS) return result
+        return primitiveOp1(startOffset, endOffset, irBuiltIns.booleanNotSymbol, booleanType, origin, result)
+    }
+
     override fun visitOperatorCall(operatorCall: FirOperatorCall, data: Any?): IrElement {
         return operatorCall.convertWithOffsets { startOffset, endOffset ->
-            val (type, symbol) = when (operatorCall.operation) {
-                FirOperation.EQ -> booleanType to irBuiltIns.eqeqSymbol
-                FirOperation.NOT_EQ -> TODO()
-                FirOperation.RANGE -> TODO()
-                FirOperation.IDENTITY -> TODO()
-                FirOperation.NOT_IDENTITY -> TODO()
-                FirOperation.LT -> TODO()
-                FirOperation.GT -> TODO()
-                FirOperation.LT_EQ -> TODO()
-                FirOperation.GT_EQ -> TODO()
-                FirOperation.IN -> TODO()
-                FirOperation.NOT_IN -> TODO()
-                FirOperation.ASSIGN -> TODO()
-                FirOperation.PLUS_ASSIGN -> TODO()
-                FirOperation.MINUS_ASSIGN -> TODO()
-                FirOperation.TIMES_ASSIGN -> TODO()
-                FirOperation.DIV_ASSIGN -> TODO()
-                FirOperation.REM_ASSIGN -> TODO()
-                FirOperation.EXCL -> TODO()
-                FirOperation.OTHER -> TODO()
-                FirOperation.IS, FirOperation.NOT_IS,
-                FirOperation.AS, FirOperation.SAFE_AS -> {
-                    TODO("Should not be here")
-                }
-            }
-            IrBinaryPrimitiveImpl(
-                startOffset, endOffset, type, null, symbol,
-                operatorCall.arguments[0].toIrExpression(),
-                operatorCall.arguments[1].toIrExpression()
-            )
+            generateOperatorCall(startOffset, endOffset, operatorCall.operation, operatorCall.arguments)
         }
     }
 
