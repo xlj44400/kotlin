@@ -480,7 +480,8 @@ internal class Fir2IrVisitor(
                     IrFieldImpl(
                         startOffset, endOffset, backingOrigin, symbol,
                         property.name, type, property.visibility,
-                        isFinal = property.isVal, isExternal = false, isStatic = property.isStatic
+                        isFinal = property.isVal, isExternal = false,
+                        isStatic = property.isStatic || irParent !is IrClass
                     )
                 }.setParentByParentStack().withParent {
                     val initializerExpression = initializer?.accept(this@Fir2IrVisitor, null) as IrExpression?
