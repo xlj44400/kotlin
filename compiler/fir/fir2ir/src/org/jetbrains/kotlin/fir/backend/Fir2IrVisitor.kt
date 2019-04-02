@@ -24,15 +24,13 @@ import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
 import org.jetbrains.kotlin.fir.scopes.impl.FirClassSubstitutionScope
 import org.jetbrains.kotlin.fir.symbols.CallableId
-import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTagImpl
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
-import org.jetbrains.kotlin.fir.types.impl.ConeClassTypeImpl
-import org.jetbrains.kotlin.fir.types.impl.FirResolvedTypeRefImpl
+import org.jetbrains.kotlin.fir.types.impl.*
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
@@ -67,8 +65,6 @@ internal class Fir2IrVisitor(
     private val fakeOverrideMode: FakeOverrideMode
 ) : FirVisitor<IrElement, Any?>() {
     companion object {
-        private val KOTLIN = FqName("kotlin")
-
         private val NEGATED_OPERATIONS: Set<FirOperation> = EnumSet.of(FirOperation.NOT_EQ, FirOperation.NOT_IDENTITY)
 
         private val UNARY_OPERATIONS: Set<FirOperation> = EnumSet.of(FirOperation.EXCL)
@@ -78,25 +74,11 @@ internal class Fir2IrVisitor(
 
     private val declarationStorage = Fir2IrDeclarationStorage(session, symbolTable, moduleDescriptor)
 
-    private fun FqName.simpleType(name: String): IrType =
-        FirResolvedTypeRefImpl(
-            session, null,
-            ConeClassTypeImpl(
-                ConeClassLikeLookupTagImpl(
-                    ClassId(this, Name.identifier(name))
-                ),
-                typeArguments = emptyArray(),
-                isNullable = false
-            ),
-            isMarkedNullable = false,
-            annotations = emptyList()
-        ).toIrType(session, declarationStorage)
+    private val nothingType = FirImplicitNothingTypeRef(session, null).toIrType(session, declarationStorage)
 
-    private val nothingType = KOTLIN.simpleType("Nothing")
+    private val unitType = FirImplicitUnitTypeRef(session, null).toIrType(session, declarationStorage)
 
-    private val unitType = KOTLIN.simpleType("Unit")
-
-    private val booleanType = KOTLIN.simpleType("Boolean")
+    private val booleanType = FirImplicitBooleanTypeRef(session, null).toIrType(session, declarationStorage)
 
     private fun ModuleDescriptor.findPackageFragmentForFile(file: FirFile): PackageFragmentDescriptor =
         getPackage(file.packageFqName).fragments.first()

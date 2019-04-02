@@ -313,7 +313,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
     }
 
     override fun transformWhenExpression(whenExpression: FirWhenExpression, data: Any?): CompositeTransformResult<FirStatement> {
-        whenExpression.transformChildren(this, data)
+        val whenExpression = super.transformWhenExpression(whenExpression, data).single as FirWhenExpression
         if (whenExpression.resultType !is FirResolvedTypeRef) {
             val type = commonSuperType(whenExpression.branches.mapNotNull {
                 it.result.resultType
@@ -432,7 +432,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
     }
 
     override fun transformExpression(expression: FirExpression, data: Any?): CompositeTransformResult<FirStatement> {
-        if (expression.resultType is FirImplicitTypeRef) {
+        if (expression !is FirWhenExpression && expression.resultType is FirImplicitTypeRef) {
             val type = FirErrorTypeRefImpl(session, expression.psi, "Type calculating for ${expression.render()} is not supported")
             expression.resultType = type
         }
