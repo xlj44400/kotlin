@@ -43,7 +43,7 @@ fun ConeKotlinType.toIrType(session: FirSession, declarationStorage: Fir2IrDecla
         is ConeKotlinErrorType -> createErrorType()
         is ConeLookupTagBasedType -> {
             val firSymbol = this.lookupTag.toSymbol(session) ?: return createErrorType()
-            val irSymbol = firSymbol.toIrSymbol(declarationStorage)
+            val irSymbol = firSymbol.toIrSymbol(session, declarationStorage)
             // TODO: annotations
             IrSimpleTypeImpl(
                 irSymbol, this.isMarkedNullable,
@@ -74,7 +74,7 @@ fun ConeKotlinTypeProjection.toIrTypeArgument(session: FirSession, declarationSt
     }
 }
 
-fun ConeClassifierSymbol.toIrSymbol(declarationStorage: Fir2IrDeclarationStorage): IrClassifierSymbol {
+fun ConeClassifierSymbol.toIrSymbol(session: FirSession, declarationStorage: Fir2IrDeclarationStorage): IrClassifierSymbol {
     return when (this) {
         is FirTypeParameterSymbol -> {
             toTypeParameterSymbol(declarationStorage)
@@ -82,7 +82,11 @@ fun ConeClassifierSymbol.toIrSymbol(declarationStorage: Fir2IrDeclarationStorage
         is LibraryTypeParameterSymbol -> {
             toTypeParameterSymbol(declarationStorage)
         }
-        is FirTypeAliasSymbol -> TODO()
+        is FirTypeAliasSymbol -> {
+            val typeAlias = fir
+            val coneClassLikeType = (typeAlias.expandedTypeRef as FirResolvedTypeRef).type as ConeClassLikeType
+            coneClassLikeType.lookupTag.toSymbol(session)!!.toIrSymbol(session, declarationStorage)
+        }
         is FirClassSymbol -> {
             toClassSymbol(declarationStorage)
         }

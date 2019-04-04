@@ -9,6 +9,7 @@ import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementFinder
 import com.intellij.psi.search.GlobalSearchScope
+import junit.framework.TestCase
 import org.jetbrains.kotlin.asJava.finder.JavaElementFinder
 import org.jetbrains.kotlin.cli.jvm.compiler.TopDownAnalyzerFacadeForJVM
 import org.jetbrains.kotlin.config.languageVersionSettings
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.fir.resolve.impl.FirProviderImpl
 import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
 import org.jetbrains.kotlin.ir.AbstractIrTextTestCase
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import java.io.File
 
 abstract class AbstractFir2IrTextTest : AbstractIrTextTestCase() {
 
@@ -26,6 +28,30 @@ abstract class AbstractFir2IrTextTest : AbstractIrTextTestCase() {
         Extensions.getArea(project)
             .getExtensionPoint(PsiElementFinder.EP_NAME)
             .unregisterExtension(JavaElementFinder::class.java)
+    }
+
+    override fun doTest(filePath: String?) {
+        if (filePath == null) {
+            super.doTest(filePath)
+        }
+        val text = File(filePath).readText()
+        if (text.startsWith("// FIR_FAIL")) {
+            try {
+                super.doTest(filePath)
+                TestCase.fail("This FIR2IR test threw exception before! Remove // FIR_FAIL line")
+            } catch (t: Throwable) {
+
+            }
+        } else {
+            super.doTest(filePath)
+        }
+    }
+
+    override fun getExpectedTextFileName(testFile: TestFile, name: String): String {
+        if ("// FIR_IDENTICAL" in testFile.content.split("\n")) {
+            return super.getExpectedTextFileName(testFile, name)
+        }
+        return name.replace(".txt", ".fir.txt").replace(".kt", ".fir.txt")
     }
 
     override fun generateIrModule(ignoreErrors: Boolean): IrModuleFragment {

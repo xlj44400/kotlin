@@ -106,12 +106,12 @@ abstract class AbstractIrGeneratorTestCase : CodegenTestCase() {
 
         fun createExpectedTextFile(testFile: TestFile, dir: File, fileName: String): File {
             val textFile = File(dir, fileName)
-            if (!textFile.exists()) {
-                TestCase.assertTrue("Can't create an expected text containingFile: ${textFile.absolutePath}", textFile.createNewFile())
-                PrintWriter(FileWriter(textFile)).use {
-                    it.println("$fileName: new expected text containingFile for ${testFile.name}")
-                }
-            }
+//            if (!textFile.exists()) {
+//                TestCase.assertTrue("Can't create an expected text containingFile: ${textFile.absolutePath}", textFile.createNewFile())
+//                PrintWriter(FileWriter(textFile)).use {
+//                    it.println("$fileName: new expected text containingFile for ${testFile.name}")
+//                }
+//            }
             return textFile
         }
 

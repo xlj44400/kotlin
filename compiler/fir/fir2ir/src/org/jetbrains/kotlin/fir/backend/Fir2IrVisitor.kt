@@ -148,7 +148,8 @@ internal class Fir2IrVisitor(
             }
 
             file.annotations.forEach {
-                annotations += it.accept(this@Fir2IrVisitor, data) as IrCall
+                val irCall = it.accept(this@Fir2IrVisitor, data) as? IrCall ?: return@forEach
+                annotations += irCall
             }
         }
     }
@@ -255,7 +256,8 @@ internal class Fir2IrVisitor(
             }
             addFakeOverrides(klass, processedFunctionNames)
             klass.annotations.forEach {
-                annotations += it.accept(this@Fir2IrVisitor, null) as IrCall
+                val irCall = it.accept(this@Fir2IrVisitor, null) as? IrCall ?: return@forEach
+                annotations += irCall
             }
         }
         if (irPrimaryConstructor != null) {
@@ -662,7 +664,13 @@ internal class Fir2IrVisitor(
             when (symbol) {
                 is IrClassSymbol -> {
                     val irClass = symbol.owner
-                    IrCallImpl(startOffset, endOffset, type, irClass.constructors.first().symbol)
+                    val irConstructor = irClass.constructors.firstOrNull()
+                    if (irConstructor == null) {
+                        IrErrorCallExpressionImpl(startOffset, endOffset, type, "No annotation constructor found: ${irClass.name}")
+                    } else {
+                        IrCallImpl(startOffset, endOffset, type, irConstructor.symbol)
+                    }
+
                 }
                 else -> IrErrorCallExpressionImpl(startOffset, endOffset, type ?: createErrorType(), "Unresolved reference: ${render()}")
             }
