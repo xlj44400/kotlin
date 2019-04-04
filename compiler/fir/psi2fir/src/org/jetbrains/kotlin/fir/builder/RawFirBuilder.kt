@@ -1166,13 +1166,13 @@ class RawFirBuilder(val session: FirSession, val stubMode: Boolean) {
             val operationToken = expression.operationToken
             val leftArgument = expression.left.toFirExpression("No left operand")
             val rightArgument = expression.right.toFirExpression("No right operand")
-            if (operationToken == ELVIS) {
-                return leftArgument.generateNotNullOrOther(session, rightArgument, "elvis", expression)
+            when (operationToken) {
+                ELVIS ->
+                    return leftArgument.generateNotNullOrOther(session, rightArgument, "elvis", expression)
+                ANDAND, OROR ->
+                    return leftArgument.generateLazyLogicalOperation(session, rightArgument, operationToken == ANDAND, expression)
             }
             val conventionCallName = operationToken.toBinaryName()
-            if (operationToken == ANDAND || operationToken == OROR) {
-                return leftArgument.generateLazyLogicalOperation(session, rightArgument, operationToken == ANDAND, expression)
-            }
             return if (conventionCallName != null || operationToken == IDENTIFIER) {
                 FirFunctionCallImpl(
                     session, expression
@@ -1181,6 +1181,8 @@ class RawFirBuilder(val session: FirSession, val stubMode: Boolean) {
                         this@RawFirBuilder.session, expression.operationReference,
                         conventionCallName ?: expression.operationReference.getReferencedNameAsName()
                     )
+                    explicitReceiver = leftArgument
+                    arguments += rightArgument
                 }
             } else {
                 val firOperation = operationToken.toFirOperation()
@@ -1189,11 +1191,11 @@ class RawFirBuilder(val session: FirSession, val stubMode: Boolean) {
                         toFirExpression("Incorrect expression in assignment: ${expression.text}")
                     }
                 } else {
-                    FirOperatorCallImpl(session, expression, firOperation)
+                    FirOperatorCallImpl(session, expression, firOperation).apply {
+                        arguments += leftArgument
+                        arguments += rightArgument
+                    }
                 }
-            }.apply {
-                arguments += leftArgument
-                arguments += rightArgument
             }
         }
 
