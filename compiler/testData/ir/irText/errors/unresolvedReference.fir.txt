@@ -30,8 +30,7 @@ FILE fqName:<root> fileName:/unresolvedReference.kt
   PROPERTY name:test4 visibility:public modality:FINAL [val]
     FIELD PROPERTY_BACKING_FIELD name:test4 type:IrErrorType visibility:public [final,static]
       EXPRESSION_BODY
-        ERROR_CALL 'Unresolved reference: <Unresolved name: times>#' type=IrErrorType
-          CONST Int type=kotlin.Int value=42
+        ERROR_CALL 'Unresolved reference: <Ambiguity: times, [kotlin/Int.times, kotlin/Int.times, kotlin/Int.times, kotlin/Int.times, kotlin/Int.times, kotlin/Int.times]>#' type=IrErrorType
           ERROR_EXPR 'No right operand' type=IrErrorType
     FUN DEFAULT_PROPERTY_ACCESSOR name:<get-test4> visibility:public modality:FINAL <> () returnType:IrErrorType
       correspondingProperty: PROPERTY name:test4 visibility:public modality:FINAL [val]
