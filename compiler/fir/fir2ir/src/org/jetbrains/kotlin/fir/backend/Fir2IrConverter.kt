@@ -29,7 +29,7 @@ object Fir2IrConverter {
         val moduleDescriptor = FirModuleDescriptor(session)
         val symbolTable = SymbolTable()
         val constantValueGenerator = ConstantValueGenerator(moduleDescriptor, symbolTable)
-        val typeTranslator = TypeTranslator(symbolTable, languageVersionSettings)
+        val typeTranslator = TypeTranslator(symbolTable, languageVersionSettings, moduleDescriptor.builtIns)
         constantValueGenerator.typeTranslator = typeTranslator
         typeTranslator.constantValueGenerator = constantValueGenerator
         val builtIns = IrBuiltIns(moduleDescriptor.builtIns, typeTranslator, symbolTable)
