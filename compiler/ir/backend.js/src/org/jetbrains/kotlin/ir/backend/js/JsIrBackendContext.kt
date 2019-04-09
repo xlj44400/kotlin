@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.ir.backend.js
 
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
+import org.jetbrains.kotlin.backend.common.DefaultArgumentsStubGenerator
 import org.jetbrains.kotlin.backend.common.atMostOne
 import org.jetbrains.kotlin.backend.common.ir.Ir
 import org.jetbrains.kotlin.backend.common.ir.Symbols
@@ -34,10 +35,7 @@ import org.jetbrains.kotlin.ir.types.IrDynamicType
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
-import org.jetbrains.kotlin.ir.util.SymbolTable
-import org.jetbrains.kotlin.ir.util.getPropertyGetter
-import org.jetbrains.kotlin.ir.util.getPropertySetter
-import org.jetbrains.kotlin.ir.util.kotlinPackageFqn
+import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
@@ -191,6 +189,15 @@ class JsIrBackendContext(
 
         override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
     }
+
+    override val defaultArgumentsStubGenerator = DefaultArgumentsStubGenerator(
+        irBuiltIns,
+        ir.symbols.defaultConstructorMarker.owner.defaultType,
+        skipInlineMethods = true,
+        skipExternalMethods = false,
+        shouldGenerateHandlerParameterForDefaultBodyFun = true,
+        stubsAreStatic = false
+    )
 
     // classes forced to be loaded
 

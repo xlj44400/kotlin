@@ -73,10 +73,12 @@ val jvmPhases = namedIrFilePhase(
             renameFieldsPhase then
             annotationPhase then
 
-            jvmDefaultArgumentStubPhase then
+            defaultArgumentStubPhase then
+            defaultParameterInjectorPhase then
 
             interfacePhase then
             interfaceDelegationPhase then
+            patchInterfaceCallsPhase then
             sharedVariablesPhase then
 
             makePatchParentsPhase(1) then
@@ -100,7 +102,6 @@ val jvmPhases = namedIrFilePhase(
             bridgePhase then
             jvmOverloadsAnnotationPhase then
             jvmStaticAnnotationPhase then
-            staticDefaultFunctionPhase then
 
             tailrecPhase then
             toArrayPhase then

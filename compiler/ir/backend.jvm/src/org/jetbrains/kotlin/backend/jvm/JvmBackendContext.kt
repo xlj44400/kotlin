@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.backend.jvm
 
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
+import org.jetbrains.kotlin.backend.common.DefaultArgumentsStubGenerator
 import org.jetbrains.kotlin.backend.common.ir.Ir
 import org.jetbrains.kotlin.backend.common.phaser.PhaseConfig
 import org.jetbrains.kotlin.backend.jvm.descriptors.JvmDeclarationFactory
@@ -19,8 +20,10 @@ import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.util.ReferenceSymbolTable
 import org.jetbrains.kotlin.ir.util.SymbolTable
+import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi2ir.PsiSourceManager
 
@@ -40,6 +43,15 @@ class JvmBackendContext(
     override val ir = JvmIr(irModuleFragment, this.symbolTable)
 
     val irIntrinsics = IrIntrinsicMethods(irBuiltIns)
+
+    override val defaultArgumentsStubGenerator = DefaultArgumentsStubGenerator(
+        irBuiltIns,
+        ir.symbols.defaultConstructorMarker.owner.defaultType.makeNullable(),
+        skipInlineMethods = false,
+        skipExternalMethods = false,
+        shouldGenerateHandlerParameterForDefaultBodyFun = true,
+        stubsAreStatic = true
+    )
 
     override var inVerbosePhase: Boolean = false
 

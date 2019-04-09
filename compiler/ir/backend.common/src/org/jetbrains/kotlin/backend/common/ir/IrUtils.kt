@@ -251,6 +251,12 @@ fun IrFunction.copyValueParametersToStatic(
     }
 }
 
+fun IrFunctionAccessExpression.passTypeArgumentsFrom(irFunction: IrTypeParametersContainer, offset: Int = 0) {
+    irFunction.typeParameters.forEachIndexed { i, param ->
+        putTypeArgument(i + offset, param.defaultType)
+    }
+}
+
 /*
     Type parameters should correspond to the function where they are defined.
     `source` is where the type is originally taken from.

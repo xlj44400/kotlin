@@ -26,8 +26,8 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
+import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -167,17 +167,35 @@ private class SingletonObjectJvmStaticLowering(
 
         irClass.declarations.filter(::isJvmStaticFunction).forEach {
             val jvmStaticFunction = it as IrSimpleFunction
-            // dispatch receiver parameter is already null for synthetic property annotation methods
-            jvmStaticFunction.dispatchReceiverParameter?.let { oldDispatchReceiverParameter ->
-                jvmStaticFunction.dispatchReceiverParameter = null
+            if (jvmStaticFunction.isDefaultArgumentStub) {
+                val (oldDispatchReceiverParameter, parameterRemapping) = modifyParametersForDefaultArgumentStub(jvmStaticFunction)
+                remapParametersInBody(jvmStaticFunction, parameterRemapping)
                 modifyBody(jvmStaticFunction, irClass, oldDispatchReceiverParameter)
-                functionsMadeStatic.add(jvmStaticFunction.symbol)
+            } else {
+                // dispatch receiver parameter is already null for synthetic property annotation methods
+                jvmStaticFunction.dispatchReceiverParameter?.let { oldDispatchReceiverParameter ->
+                    jvmStaticFunction.dispatchReceiverParameter = null
+                    modifyBody(jvmStaticFunction, irClass, oldDispatchReceiverParameter)
+                }
             }
+            functionsMadeStatic.add(jvmStaticFunction.symbol)
         }
     }
 
     fun modifyBody(irFunction: IrFunction, irClass: IrClass, oldDispatchReceiverParameter: IrValueParameter) {
         irFunction.body = irFunction.body?.replaceThisByStaticReference(context, irClass, oldDispatchReceiverParameter)
+    }
+
+    fun modifyParametersForDefaultArgumentStub(stub: IrSimpleFunction): Pair<IrValueParameter, Map<IrValueSymbol, IrValueSymbol>> {
+        with(stub) {
+            val formerDispatchReceiverParameter = valueParameters[0]
+            val newParameters = valueParameters.drop(1).map { it.copyTo(stub, index = it.index - 1) }
+            val parameterMap: Map<IrValueSymbol, IrValueSymbol> =
+                valueParameters.drop(1).map { it.symbol }.zip(newParameters.map { it.symbol }).toMap()
+            valueParameters.clear()
+            valueParameters.addAll(newParameters)
+            return Pair(formerDispatchReceiverParameter, parameterMap)
+        }
     }
 }
 
@@ -186,7 +204,32 @@ private class MakeCallsStatic(
     val functionsMadeStatic: Set<IrFunctionSymbol>
 ) : IrElementTransformerVoid() {
     override fun visitCall(expression: IrCall): IrExpression {
+        val callee = expression.symbol.owner
         if (functionsMadeStatic.contains(expression.symbol)) {
+            if (callee.origin == IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER) {
+                return context.createIrBuilder(expression.symbol, expression.startOffset, expression.endOffset).irBlock(expression) {
+                    val oldReceiver = expression.getValueArgument(0)!!
+                    val oldReceiverVoid = IrTypeOperatorCallImpl(
+                        oldReceiver.startOffset, oldReceiver.endOffset,
+                        context.irBuiltIns.unitType,
+                        IrTypeOperator.IMPLICIT_COERCION_TO_UNIT,
+                        context.irBuiltIns.unitType, context.irBuiltIns.unitClass,
+                        oldReceiver
+                    )
+                    val newCall = IrCallImpl(
+                        expression.startOffset, expression.endOffset, expression.type, expression.symbol, expression.descriptor,
+                        expression.typeArgumentsCount,
+                        expression.valueArgumentsCount - 1,
+                        expression.origin, expression.superQualifierSymbol
+                    )
+                    newCall.copyTypeArgumentsFrom(expression)
+                    for (i in 1 until expression.valueArgumentsCount) {
+                        newCall.putValueArgument(i - 1, expression.getValueArgument(i))
+                    }
+                    +oldReceiverVoid
+                    +newCall
+                }
+            }
             return context.createIrBuilder(expression.symbol, expression.startOffset, expression.endOffset).irBlock(expression) {
                 // OldReceiver has to be evaluated for its side effects.
                 val oldReceiver = super.visitExpression(expression.dispatchReceiver!!)
@@ -195,7 +238,7 @@ private class MakeCallsStatic(
                     oldReceiver.startOffset, oldReceiver.endOffset,
                     context.irBuiltIns.unitType,
                     IrTypeOperator.IMPLICIT_COERCION_TO_UNIT,
-                    context.irBuiltIns.unitType, context.irBuiltIns.unitType.classifierOrFail,
+                    context.irBuiltIns.unitType, context.irBuiltIns.unitClass,
                     oldReceiver
                 )
 
@@ -211,4 +254,22 @@ private class MakeCallsStatic(
 private fun isJvmStaticFunction(declaration: IrDeclaration): Boolean =
     declaration is IrSimpleFunction &&
             (declaration.hasAnnotation(JVM_STATIC_ANNOTATION_FQ_NAME) ||
-                    declaration.correspondingProperty?.hasAnnotation(JVM_STATIC_ANNOTATION_FQ_NAME) == true)
+                    declaration.correspondingPropertySymbol?.owner?.hasAnnotation(JVM_STATIC_ANNOTATION_FQ_NAME) == true)
+
+private val IrFunction.isDefaultArgumentStub: Boolean
+    get() = origin == IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER && dispatchReceiverParameter == null
+
+
+private fun remapParametersInBody(irFunction: IrFunction, parameterMap: Map<IrValueSymbol, IrValueSymbol>) {
+    irFunction.body = irFunction.body?.transform(
+        object : IrElementTransformerVoid() {
+            override fun visitGetValue(expression: IrGetValue): IrExpression =
+                IrGetValueImpl(
+                    expression.startOffset, expression.endOffset, expression.type,
+                    parameterMap[expression.symbol] ?: expression.symbol,
+                    expression.origin
+                )
+        },
+        null
+    )
+}

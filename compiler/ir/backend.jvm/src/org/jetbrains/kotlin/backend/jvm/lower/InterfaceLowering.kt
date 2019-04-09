@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.backend.jvm.lower
 
+import org.jetbrains.kotlin.backend.common.BodyLoweringPass
 import org.jetbrains.kotlin.backend.common.ClassLoweringPass
 import org.jetbrains.kotlin.backend.common.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.backend.common.ir.copyTo
@@ -14,11 +15,17 @@ import org.jetbrains.kotlin.backend.common.lower.VariableRemapper
 import org.jetbrains.kotlin.backend.common.phaser.makeIrFilePhase
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
+import org.jetbrains.kotlin.backend.jvm.comesFromJava
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
+import org.jetbrains.kotlin.ir.expressions.IrBody
+import org.jetbrains.kotlin.ir.expressions.IrCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrStatementOriginImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.util.isInterface
@@ -114,5 +121,50 @@ internal fun createStaticFunctionWithReceivers(
         body = oldFunction.body?.transform(VariableRemapper(mapping), null)
 
         metadata = oldFunction.metadata
+    }
+}
+
+val patchInterfaceCallsPhase = makeIrFilePhase(
+    ::PatchInterfaceCallsLowering,
+    name = "PatchInterfaceCalls",
+    description = "Repair calls to moved interface members",
+    prerequisite = setOf(interfacePhase)
+)
+
+class PatchInterfaceCallsLowering(val context: JvmBackendContext): IrElementTransformerVoid(), BodyLoweringPass {
+    override fun lower(irBody: IrBody) {
+        irBody.transformChildrenVoid(this)
+    }
+
+    override fun visitCall(expression: IrCall): IrExpression {
+        val callee = expression.symbol.owner
+        val calleeParent = callee.parent
+        if (callee.dispatchReceiverParameter != null ||
+            callee !is IrSimpleFunction ||
+            callee.comesFromJava() ||
+            calleeParent !is IrClass ||
+            !calleeParent.isInterface) {
+            return super.visitCall(expression)
+        }
+
+        val newCallee = context.declarationFactory.getDefaultImplsFunction(callee)
+        return IrCallImpl(
+            expression.startOffset, expression.endOffset, expression.type,
+            newCallee.symbol, newCallee.descriptor,
+            expression.typeArgumentsCount, expression.valueArgumentsCount,
+            MOVED_INTERFACE_MEMBER_CALL_ORIGIN,
+            null
+        ).apply {
+            for (i in 0 until typeArgumentsCount) {
+                putTypeArgument(i, expression.getTypeArgument(i))
+            }
+            for (i in 0 until valueArgumentsCount) {
+                putValueArgument(i, visitExpression(expression.getValueArgument(i)!!))
+            }
+        }
+    }
+
+    companion object {
+        object MOVED_INTERFACE_MEMBER_CALL_ORIGIN : IrStatementOriginImpl("MOVED_INTERFACE_MEMBER_CALL")
     }
 }

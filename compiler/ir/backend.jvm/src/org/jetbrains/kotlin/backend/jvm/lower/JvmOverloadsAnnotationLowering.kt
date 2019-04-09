@@ -12,19 +12,18 @@ import org.jetbrains.kotlin.backend.common.descriptors.WrappedClassConstructorDe
 import org.jetbrains.kotlin.backend.common.descriptors.WrappedSimpleFunctionDescriptor
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
+import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrConstructorImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
+import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.impl.IrConstructorSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.hasDefaultValue
 import org.jetbrains.kotlin.resolve.jvm.annotations.JVM_OVERLOADS_FQ_NAME
 
 internal val jvmOverloadsAnnotationPhase = makeIrFilePhase(
@@ -58,49 +57,51 @@ private class JvmOverloadsAnnotationLowering(val context: JvmBackendContext) : C
     private fun generateWrapper(target: IrFunction, numDefaultParametersToExpect: Int): IrFunction {
         val wrapperIrFunction = generateWrapperHeader(target, numDefaultParametersToExpect)
 
-        val call = if (target is IrConstructor)
+        // Construct a fake call that we will translate using defaultArgumentStubGenerator
+        val fakeCall = if (target is IrConstructor)
             IrDelegatingConstructorCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, target.returnType, target.symbol, target.descriptor)
         else
-            IrCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, target.returnType, target.symbol)
-        call.dispatchReceiver = wrapperIrFunction.dispatchReceiverParameter?.let { dispatchReceiver ->
-            IrGetValueImpl(
-                UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-                dispatchReceiver.symbol
-            )
-        }
-        call.extensionReceiver = wrapperIrFunction.extensionReceiverParameter?.let { extensionReceiver ->
-            IrGetValueImpl(
-                UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-                extensionReceiver.symbol
-            )
-        }
+            IrCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, target.returnType, target.symbol, target.descriptor)
 
-        var parametersCopied = 0
-        var defaultParametersCopied = 0
-        for ((i, valueParameter) in target.valueParameters.withIndex()) {
-            if (valueParameter.defaultValue != null) {
-                if (defaultParametersCopied < numDefaultParametersToExpect) {
-                    defaultParametersCopied++
-                    call.putValueArgument(
-                        i,
-                        IrGetValueImpl(
-                            UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-                            wrapperIrFunction.valueParameters[parametersCopied++].symbol
-                        )
-                    )
-                } else {
-                    call.putValueArgument(i, null)
-                }
-            } else {
-                call.putValueArgument(
-                    i,
-                    IrGetValueImpl(
-                        UNDEFINED_OFFSET, UNDEFINED_OFFSET,
-                        wrapperIrFunction.valueParameters[parametersCopied++].symbol
-                    )
-                )
+        with(fakeCall) {
+            passTypeArgumentsFrom(wrapperIrFunction)
+            dispatchReceiver = wrapperIrFunction.dispatchReceiverParameter?.let {
+                IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol)
             }
+            extensionReceiver = wrapperIrFunction.extensionReceiverParameter?.let {
+                IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol)
+            }
+            var paramNum = 0
+            var numDefaultParameters = 0
+            target.valueParameters.mapIndexed { i, param ->
+                if (!param.hasDefaultValue() || numDefaultParameters++ < numDefaultParametersToExpect) {
+                    putValueArgument(i, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, wrapperIrFunction.valueParameters[paramNum++].symbol))
+                }
+            }
+        }
 
+        val (calleeSymbol, params) = context.defaultArgumentsStubGenerator.argumentsForCall(context, fakeCall, shiftForInnerClass = true)
+        val callee = calleeSymbol.owner
+
+        val call = if (callee is IrConstructor)
+            IrDelegatingConstructorCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, callee.returnType, callee.symbol, callee.descriptor)
+        else
+            IrCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, callee.returnType, callee.symbol, callee.descriptor)
+
+        with(call) {
+            passTypeArgumentsFrom(wrapperIrFunction)
+            if (callee !is IrConstructor) {
+                var shift = 0
+                wrapperIrFunction.dispatchReceiverParameter?.let {
+                    putValueArgument(shift++, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol))
+                }
+                wrapperIrFunction.extensionReceiverParameter?.let {
+                    putValueArgument(shift++, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol))
+                }
+            }
+            for ((parameter, expression) in params) {
+                putValueArgument(parameter.index, expression)
+            }
         }
 
         wrapperIrFunction.body = IrExpressionBodyImpl(

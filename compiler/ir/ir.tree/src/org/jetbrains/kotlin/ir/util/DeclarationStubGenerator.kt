@@ -34,7 +34,8 @@ class DeclarationStubGenerator(
     val symbolTable: SymbolTable,
     languageVersionSettings: LanguageVersionSettings,
     private val externalDeclarationOrigin: ((DeclarationDescriptor) -> IrDeclarationOrigin)? = null,
-    private val deserializer: IrDeserializer? = null
+    private val deserializer: IrDeserializer? = null,
+    val generateDefaultArgumentsStub: (IrFunction, IrDeclarationOrigin) -> IrFunction? = { _, _ -> null }
 ) {
     private val lazyTable = symbolTable.lazyWrapper
 

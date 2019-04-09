@@ -51,6 +51,7 @@ class JvmDeclarationFactory(
 
     private val defaultImplsMethods = HashMap<IrSimpleFunction, IrSimpleFunction>()
     private val defaultImplsClasses = HashMap<IrClass, IrClass>()
+    private val staticDefaultArgumentStubs = HashMap<IrSimpleFunction, IrSimpleFunction>()
 
     override fun getFieldForEnumEntry(enumEntry: IrEnumEntry, entryType: IrType): IrField =
         singletonFieldDeclarations.getOrPut(enumEntry) {
@@ -174,5 +175,10 @@ class JvmDeclarationFactory(
                 parent = interfaceClass
                 createImplicitParameterDeclarationWithWrappedDescriptor()
             }
+        }
+
+    fun getStaticDefaultArgumentStub(oldStub: IrSimpleFunction): IrSimpleFunction =
+        staticDefaultArgumentStubs.getOrPut(oldStub) {
+            createStaticFunctionWithReceivers(oldStub.parent, oldStub.name, oldStub)
         }
 }

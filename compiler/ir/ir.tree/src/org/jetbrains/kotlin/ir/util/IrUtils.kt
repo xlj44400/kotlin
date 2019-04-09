@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.source.PsiSourceElement
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
+import org.jetbrains.kotlin.utils.DFS
 
 /**
  * Binds the arguments explicitly represented in the IR to the parameters of the accessed function.
@@ -350,6 +351,11 @@ inline fun <reified T : IrDeclaration> IrDeclarationContainer.findDeclaration(pr
 inline fun <reified T : IrDeclaration> IrDeclarationContainer.filterDeclarations(predicate: (T) -> Boolean): List<T> =
     declarations.filter { it is T && predicate(it) } as List<T>
 
+fun IrValueParameter.hasDefaultValue(): Boolean = DFS.ifAny(
+    listOf(this),
+    { current -> (current.parent as? IrSimpleFunction)?.overriddenSymbols?.map { it.owner.valueParameters[current.index] } ?: listOf() },
+    { current -> current.defaultValue != null }
+)
 fun IrValueParameter.copy(newDescriptor: ParameterDescriptor): IrValueParameter {
     assert(this.descriptor.type == newDescriptor.type)
 

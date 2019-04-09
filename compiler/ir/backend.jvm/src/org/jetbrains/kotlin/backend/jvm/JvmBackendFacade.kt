@@ -43,7 +43,8 @@ object JvmBackendFacade {
             irModuleFragment.descriptor,
             psi2irContext.symbolTable,
             psi2irContext.irBuiltIns,
-            JvmGeneratorExtensions.externalDeclarationOrigin
+            JvmGeneratorExtensions.externalDeclarationOrigin,
+            defaultArgumentsStubGenerator = jvmBackendContext.defaultArgumentsStubGenerator::generateStub
         ).generateUnboundSymbolsAsDependencies()
 
         val jvmBackend = JvmBackend(jvmBackendContext)

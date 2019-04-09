@@ -7,10 +7,8 @@ package org.jetbrains.kotlin.backend.common
 
 import org.jetbrains.kotlin.backend.common.ir.Ir
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrFile
-import org.jetbrains.kotlin.name.FqName
 
 interface LoggingContext {
     var inVerbosePhase: Boolean
@@ -19,6 +17,7 @@ interface LoggingContext {
 
 interface CommonBackendContext : BackendContext, LoggingContext {
     override val ir: Ir<CommonBackendContext>
+    val defaultArgumentsStubGenerator: DefaultArgumentsStubGenerator
 
     fun report(element: IrElement?, irFile: IrFile?, message: String, isError: Boolean)
 

@@ -205,12 +205,12 @@ private val callableReferenceLoweringPhase = makeJsModulePhase(
 
 private val defaultArgumentStubGeneratorPhase = makeJsModulePhase(
     ::JsDefaultArgumentStubGenerator,
-    name = "DefaultArgumentStubGenerator",
+    name = "DefaultArgumentStubLowering",
     description = "Generate synthetic stubs for functions with default parameter values"
 )
 
 private val defaultParameterInjectorPhase = makeJsModulePhase(
-    { context -> DefaultParameterInjector(context, skipExternalMethods = true) },
+    { context -> DefaultParameterInjector(context) },
     name = "DefaultParameterInjector",
     description = "Replace callsite with default parameters with corresponding stub function",
     prerequisite = setOf(callableReferenceLoweringPhase, innerClassesLoweringPhase)

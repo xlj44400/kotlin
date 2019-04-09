@@ -344,16 +344,16 @@ class ExpressionCodegen(
                 arg != null -> {
                     callGenerator.genValueAndPut(parameterDescriptor, arg, parameterType, i, this@ExpressionCodegen, data)
                 }
-                parameterDescriptor.hasDefaultValue() -> {
-                    callGenerator.putValueIfNeeded(
-                        parameterType,
-                        StackValue.createDefaultValue(parameterType),
-                        ValueKind.DEFAULT_PARAMETER,
-                        i,
-                        this@ExpressionCodegen
-                    )
-                    defaultMask.mark(i - extraArgsShift/*TODO switch to separate lower*/)
-                }
+//                parameterDescriptor.hasDefaultValue() -> {
+//                    callGenerator.putValueIfNeeded(
+//                        parameterType,
+//                        StackValue.createDefaultValue(parameterType),
+//                        ValueKind.DEFAULT_PARAMETER,
+//                        i,
+//                        this@ExpressionCodegen
+//                    )
+//                    defaultMask.mark(i - extraArgsShift/*TODO switch to separate lower*/)
+//                }
                 else -> {
                     assert(parameterDescriptor.varargElementType != null)
                     //empty vararg
