@@ -35,9 +35,9 @@ import kotlin.system.measureNanoTime
 private const val FAIL_FAST = true
 private const val DUMP_FIR = false
 
-private const val FIR_DUMP_PATH = "tmp/firDump"
-private const val FIR_HTML_DUMP_PATH = "tmp/firDump-html"
-private const val FIR_LOGS_PATH = "tmp/fir-logs"
+private const val FIR_DUMP_PATH = "C:/fir_tmp/firDump"
+private const val FIR_HTML_DUMP_PATH = "C:/fir_tmp/firDump-html"
+private const val FIR_LOGS_PATH = "C:/fir_tmp/fir-logs"
 
 private const val PASSES = 1
 
