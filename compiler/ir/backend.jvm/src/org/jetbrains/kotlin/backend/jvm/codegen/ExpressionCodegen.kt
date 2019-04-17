@@ -34,8 +34,6 @@ import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.DescriptorUtils.isEnumClass
-import org.jetbrains.kotlin.resolve.calls.components.hasDefaultValue
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
 import org.jetbrains.kotlin.resolve.jvm.AsmTypes
 import org.jetbrains.kotlin.resolve.jvm.AsmTypes.OBJECT_TYPE
@@ -329,56 +327,30 @@ class ExpressionCodegen(
         }
 
         callGenerator.beforeValueParametersStart()
-        val defaultMask = DefaultCallArgs(callable.valueParameterTypes.size)
-        val extraArgsShift =
-            when {
-                expression.descriptor is ConstructorDescriptor && isEnumClass(expression.descriptor.containingDeclaration) -> 2
-                expression.descriptor is ConstructorDescriptor &&
-                        (expression.descriptor.containingDeclaration as ClassDescriptor).isInner -> 1 // skip the `$outer` parameter
-                else -> 0
-            }
         expression.descriptor.valueParameters.forEachIndexed { i, parameterDescriptor ->
             val arg = expression.getValueArgument(i)
             val parameterType = callable.valueParameterTypes[i]
-            when {
-                arg != null -> {
-                    callGenerator.genValueAndPut(parameterDescriptor, arg, parameterType, i, this@ExpressionCodegen, data)
-                }
-//                parameterDescriptor.hasDefaultValue() -> {
-//                    callGenerator.putValueIfNeeded(
-//                        parameterType,
-//                        StackValue.createDefaultValue(parameterType),
-//                        ValueKind.DEFAULT_PARAMETER,
-//                        i,
-//                        this@ExpressionCodegen
-//                    )
-//                    defaultMask.mark(i - extraArgsShift/*TODO switch to separate lower*/)
-//                }
-                else -> {
-                    assert(parameterDescriptor.varargElementType != null)
-                    //empty vararg
+            if (arg != null) {
+                callGenerator.genValueAndPut(parameterDescriptor, arg, parameterType, i, this@ExpressionCodegen, data)
+            } else {
+                assert(parameterDescriptor.varargElementType != null)
+                //empty vararg
 
-                    // Upper bound for type of vararg parameter should always have a form of 'Array<out T>',
-                    // while its lower bound may be Nothing-typed after approximation
-                    val type = typeMapper.mapType(parameterDescriptor.type.upperIfFlexible())
-                    callGenerator.putValueIfNeeded(
-                        parameterType,
-                        StackValue.operation(type) {
-                            it.aconst(0)
-                            it.newarray(correctElementType(type))
-                        },
-                        ValueKind.GENERAL_VARARG, i, this@ExpressionCodegen
-                    )
-                }
+                // Upper bound for type of vararg parameter should always have a form of 'Array<out T>',
+                // while its lower bound may be Nothing-typed after approximation
+                val type = typeMapper.mapType(parameterDescriptor.type.upperIfFlexible())
+                callGenerator.putValueIfNeeded(
+                    parameterType,
+                    StackValue.operation(type) {
+                        it.aconst(0)
+                        it.newarray(correctElementType(type))
+                    },
+                    ValueKind.GENERAL_VARARG, i, this@ExpressionCodegen
+                )
             }
         }
 
-        callGenerator.genCall(
-            callable,
-            defaultMask.generateOnStackIfNeeded(callGenerator, expression.descriptor is ConstructorDescriptor, this),
-            this,
-            expression
-        )
+        callGenerator.genCall(callable, false, this, expression)
 
         val returnType = expression.descriptor.returnType
         if (returnType != null && returnType.isNothing()) {
@@ -1124,25 +1096,6 @@ class ExpressionCodegen(
     fun isFinallyMarkerRequired(): Boolean {
         return irFunction.isInline || isInlineLambda
     }
-}
-
-fun DefaultCallArgs.generateOnStackIfNeeded(callGenerator: IrCallGenerator, isConstructor: Boolean, codegen: ExpressionCodegen): Boolean {
-    val toInts = toInts()
-    if (!toInts.isEmpty()) {
-        for (mask in toInts) {
-            callGenerator.putValueIfNeeded(Type.INT_TYPE, StackValue.constant(mask, Type.INT_TYPE), ValueKind.DEFAULT_MASK, -1, codegen)
-        }
-
-        val parameterType = if (isConstructor) AsmTypes.DEFAULT_CONSTRUCTOR_MARKER else AsmTypes.OBJECT_TYPE
-        callGenerator.putValueIfNeeded(
-            parameterType,
-            StackValue.constant(null, parameterType),
-            ValueKind.METHOD_HANDLE_IN_DEFAULT,
-            -1,
-            codegen
-        )
-    }
-    return toInts.isNotEmpty()
 }
 
 internal fun CallableDescriptor.isInlineCall(state: GenerationState) =
