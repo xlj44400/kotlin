@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.backend.common.descriptors.WrappedSimpleFunctionDesc
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
 import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
+import org.jetbrains.kotlin.backend.common.lower.getRealDefaultsFunction
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -75,34 +76,20 @@ private class JvmOverloadsAnnotationLowering(val context: JvmBackendContext) : C
             var numDefaultParameters = 0
             target.valueParameters.mapIndexed { i, param ->
                 if (!param.hasDefaultValue() || numDefaultParameters++ < numDefaultParametersToExpect) {
-                    putValueArgument(i, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, wrapperIrFunction.valueParameters[paramNum++].symbol))
+                    putValueArgument(
+                        i,
+                        IrGetValueImpl(
+                            UNDEFINED_OFFSET,
+                            UNDEFINED_OFFSET,
+                            wrapperIrFunction.valueParameters[paramNum++].symbol
+                        )
+                    )
                 }
             }
         }
 
-        val (calleeSymbol, params) = context.defaultArgumentsStubGenerator.argumentsForCall(context, fakeCall, shiftForInnerClass = true)
-        val callee = calleeSymbol.owner
-
-        val call = if (callee is IrConstructor)
-            IrDelegatingConstructorCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, callee.returnType, callee.symbol, callee.descriptor)
-        else
-            IrCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, callee.returnType, callee.symbol, callee.descriptor)
-
-        with(call) {
-            passTypeArgumentsFrom(wrapperIrFunction)
-            if (callee !is IrConstructor) {
-                var shift = 0
-                wrapperIrFunction.dispatchReceiverParameter?.let {
-                    putValueArgument(shift++, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol))
-                }
-                wrapperIrFunction.extensionReceiverParameter?.let {
-                    putValueArgument(shift++, IrGetValueImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, it.symbol))
-                }
-            }
-            for ((parameter, expression) in params) {
-                putValueArgument(parameter.index, expression)
-            }
-        }
+        val callee = target.getRealDefaultsFunction(context)!!
+        val call = context.defaultArgumentsStubGenerator.transformCall(context, fakeCall, callee, shiftForInnerClass = true)
 
         wrapperIrFunction.body = IrExpressionBodyImpl(
             UNDEFINED_OFFSET, UNDEFINED_OFFSET, call

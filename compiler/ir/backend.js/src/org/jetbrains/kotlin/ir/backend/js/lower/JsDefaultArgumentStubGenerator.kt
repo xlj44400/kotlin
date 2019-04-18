@@ -8,7 +8,6 @@ package org.jetbrains.kotlin.ir.backend.js.lower
 import org.jetbrains.kotlin.backend.common.BodyLoweringPass
 import org.jetbrains.kotlin.backend.common.ir.isOverridableOrOverrides
 import org.jetbrains.kotlin.backend.common.lower.DefaultArgumentStubLowering
-import org.jetbrains.kotlin.backend.common.lower.DEFAULT_DISPATCH_CALL
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -21,7 +20,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrFunctionReferenceImpl
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 class JsDefaultArgumentStubGenerator(override val context: JsIrBackendContext) : DefaultArgumentStubLowering(context) {
@@ -59,7 +57,7 @@ class JsDefaultCallbackGenerator(val context: JsIrBackendContext): BodyLoweringP
         irBody.transformChildrenVoid(object : IrElementTransformerVoid() {
             override fun visitCall(expression: IrCall): IrExpression {
                 super.visitCall(expression)
-                if (expression.origin != DEFAULT_DISPATCH_CALL || expression.superQualifierSymbol == null) return expression
+                if (expression.origin != IrStatementOrigin.DEFAULT_DISPATCH_CALL || expression.superQualifierSymbol == null) return expression
 
                 val binding = buildBoundSuperCall(expression)
 

@@ -11,9 +11,9 @@ import org.jetbrains.kotlin.backend.common.descriptors.WrappedValueParameterDesc
 import org.jetbrains.kotlin.backend.common.descriptors.synthesizedName
 import org.jetbrains.kotlin.backend.common.ir.copyTo
 import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.lower.generateDefaultsFunction
-import org.jetbrains.kotlin.backend.common.lower.nullConst
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.declarations.buildClass
 import org.jetbrains.kotlin.ir.declarations.*
@@ -21,16 +21,16 @@ import org.jetbrains.kotlin.ir.declarations.impl.IrConstructorImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
-import org.jetbrains.kotlin.ir.expressions.IrConstKind
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
+import org.jetbrains.kotlin.ir.expressions.*
+import org.jetbrains.kotlin.ir.expressions.impl.IrCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrEnumConstructorCallImpl
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrConstructorSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
-import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.isEffectivelyExternal
@@ -114,43 +114,55 @@ class DefaultArgumentsStubGenerator(
         return newFunction
     }
 
-    fun argumentsForCall(context: CommonBackendContext, expression: IrFunctionAccessExpression, shiftForInnerClass: Boolean = false): Pair<IrFunctionSymbol, List<Pair<IrValueParameter, IrExpression?>>> {
+    fun transformCall(
+        context: CommonBackendContext, expression: IrFunctionAccessExpression,
+        realFunction: IrFunction,
+        shiftForInnerClass: Boolean = false
+    ): IrFunctionAccessExpression {
         val declaration = expression.symbol.owner
 
-        val keyFunction = declaration.findSuperMethodWithDefaultArguments()!!
-        val realFunction =
-            keyFunction.generateDefaultsFunction(context, IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER)
+        val valueArguments = mutableListOf<IrExpression?>()
+        var dispatchReceiverValue: IrExpression? = null
+        var extensionReceiverValue: IrExpression? = null
 
-        val shift = if (stubsAreStatic && declaration !is IrConstructor)
-            listOfNotNull(declaration.dispatchReceiverParameter, declaration.extensionReceiverParameter).size
-        else 0
-
-        val innerClassShift = if (shiftForInnerClass && declaration is IrConstructor && declaration.parentAsClass.isInner) 1 else 0
-
-        val maskValues = Array((declaration.valueParameters.size + 31) / 32) { 0 }
-        val params = mutableListOf<Pair<IrValueParameter, IrExpression?>>()
-        if (innerClassShift != 0) {
-            params += realFunction.valueParameters[shift] to expression.getValueArgument(0)
+        if (stubsAreStatic && declaration !is IrConstructor) {
+            expression.dispatchReceiver?.let {
+                valueArguments += it
+            }
+            expression.extensionReceiver?.let {
+                valueArguments += it
+            }
+        } else {
+            dispatchReceiverValue = expression.dispatchReceiver
+            extensionReceiverValue = expression.extensionReceiver
         }
-        params += declaration.valueParameters.drop(innerClassShift).mapIndexed { i, _ ->
+
+        var innerClassShift = 0
+        if (shiftForInnerClass && declaration is IrConstructor && declaration.parentAsClass.isInner) {
+            valueArguments.add(expression.getValueArgument(0))
+            innerClassShift = 1
+        }
+
+        val maskValues = Array((declaration.valueParameters.size - innerClassShift + 31) / 32) { 0 }
+        valueArguments += declaration.valueParameters.drop(innerClassShift).mapIndexed { i, valueParameter ->
             val valueArgument = expression.getValueArgument(i + innerClassShift)
             if (valueArgument == null) {
                 val maskIndex = i / 32
                 maskValues[maskIndex] = maskValues[maskIndex] or (1 shl (i % 32))
             }
-            val valueParameterDeclaration = realFunction.valueParameters[i + shift + innerClassShift]
-            val defaultValueArgument = if (valueParameterDeclaration.varargElementType != null) {
+            val defaultValueArgument = if (valueParameter.varargElementType != null) {
                 null
             } else {
-                nullConst(context, expression, valueParameterDeclaration.type)
+                nullConst(context, expression, valueParameter.type)
             }
-            valueParameterDeclaration to (valueArgument ?: defaultValueArgument)
+
+            valueArgument ?: defaultValueArgument
         }
 
         val startOffset = expression.startOffset
         val endOffset = expression.endOffset
         maskValues.forEachIndexed { i, maskValue ->
-            params += context.defaultArgumentsStubGenerator.maskParameterDeclaration(realFunction, i) to IrConstImpl.int(
+            valueArguments += IrConstImpl.int(
                 startOffset = startOffset,
                 endOffset = endOffset,
                 type = context.irBuiltIns.intType,
@@ -159,7 +171,7 @@ class DefaultArgumentsStubGenerator(
         }
         if (expression.symbol is IrConstructorSymbol) {
             val defaultArgumentMarker = context.ir.symbols.defaultConstructorMarker
-            params += context.defaultArgumentsStubGenerator.markerParameterDeclaration(realFunction) to IrConstImpl(
+            valueArguments += IrConstImpl(
                 UNDEFINED_OFFSET, UNDEFINED_OFFSET,
                 defaultArgumentMarker.owner.defaultType,
                 IrConstKind.Null,
@@ -173,34 +185,22 @@ class DefaultArgumentsStubGenerator(
 //                        type = defaultArgumentMarker.owner.defaultType,
 //                        symbol = defaultArgumentMarker
 //                    )
-        } else if (context.ir.shouldGenerateHandlerParameterForDefaultBodyFun()) {
-            params += realFunction.valueParameters.last() to
-                    IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)
+        } else if (shouldGenerateHandlerParameterForDefaultBodyFun) {
+            valueArguments += IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)
         }
 
-        return Pair(realFunction.symbol, params)
-    }
-
-    private fun IrFunction.findSuperMethodWithDefaultArguments(): IrFunction? {
-        if (!functionNeedsDefaultArgumentsStub(this)) return null
-
-        if (this !is IrSimpleFunction) return this
-
-        for (s in overriddenSymbols) {
-            s.owner.findSuperMethodWithDefaultArguments()?.let { return it }
+        val newCall = generateStubCall(expression, realFunction).apply {
+            copyTypeArgumentsFrom(expression)
+            dispatchReceiver = dispatchReceiverValue
+            extensionReceiver = extensionReceiverValue
+            valueArguments.forEachIndexed { i, arg -> putValueArgument(i, arg)}
         }
 
-        return this
+        return newCall
     }
 
     fun maskParameter(function: IrFunction, number: Int) =
         function.valueParameters.single { it.name == parameterMaskName(number) }
-
-    fun maskParameterDeclaration(function: IrFunction, number: Int) =
-        maskParameter(function, number)
-
-    fun markerParameterDeclaration(function: IrFunction) =
-        function.valueParameters.single { it.name == kConstructorMarkerName }
 
     companion object {
         private fun buildFunctionDeclaration(irFunction: IrFunction, origin: IrDeclarationOrigin): IrFunction {
@@ -285,15 +285,54 @@ class DefaultArgumentsStubGenerator(
         internal val kConstructorMarkerName = "marker".synthesizedName
 
         private fun parameterMaskName(number: Int) = "mask$number".synthesizedName
+
+        private fun nullConst(context: CommonBackendContext, expression: IrElement?, type: IrType): IrExpression {
+            val startOffset = expression?.startOffset ?: UNDEFINED_OFFSET
+            val endOffset = expression?.endOffset ?: UNDEFINED_OFFSET
+            return when {
+                type.isFloat() -> IrConstImpl.float(startOffset, endOffset, type, 0.0F)
+                type.isDouble() -> IrConstImpl.double(startOffset, endOffset, type, 0.0)
+                type.isBoolean() -> IrConstImpl.boolean(startOffset, endOffset, type, false)
+                type.isByte() -> IrConstImpl.byte(startOffset, endOffset, type, 0)
+                type.isChar() -> IrConstImpl.char(startOffset, endOffset, type, 0.toChar())
+                type.isShort() -> IrConstImpl.short(startOffset, endOffset, type, 0)
+                type.isInt() -> IrConstImpl.int(startOffset, endOffset, type, 0)
+                type.isLong() -> IrConstImpl.long(startOffset, endOffset, type, 0)
+                else -> IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)
+            }
+        }
+
+        private fun generateStubCall(expression: IrFunctionAccessExpression, stub: IrFunction): IrFunctionAccessExpression =
+            when (expression) {
+                is IrDelegatingConstructorCall -> IrDelegatingConstructorCallImpl(
+                    expression.startOffset, expression.endOffset, expression.type,
+                    stub.symbol as IrConstructorSymbol,
+                    stub.descriptor as ClassConstructorDescriptor,
+                    expression.typeArgumentsCount
+                )
+                is IrEnumConstructorCall -> IrEnumConstructorCallImpl(
+                    expression.startOffset, expression.endOffset, expression.type,
+                    stub.symbol as IrConstructorSymbol,
+                    expression.typeArgumentsCount
+                )
+                is IrCall -> IrCallImpl(
+                    expression.startOffset, expression.endOffset, expression.type,
+                    stub.symbol, stub.descriptor,
+                    expression.typeArgumentsCount,
+                    origin = IrStatementOrigin.DEFAULT_DISPATCH_CALL
+
+                )
+                else -> error("Unknown subclass of IrFunctionAccessExpression: ${expression}")
+            }
+
+        // Ugly!!!!
+        private fun DeserializedContainerSource.getFacadeClassName(): Name =
+            Name.identifier(
+                presentableString
+                    .substringAfterLast('.')
+                    .substringAfterLast('/')
+                    .substringBefore("__")
+                    .substringBeforeLast('\'')
+            )
     }
 }
-
-// Ugly!!!!
-private fun DeserializedContainerSource.getFacadeClassName(): Name =
-    Name.identifier(
-        presentableString
-            .substringAfterLast('.')
-            .substringAfterLast('/')
-            .substringBefore("__")
-            .substringBeforeLast('\'')
-    )

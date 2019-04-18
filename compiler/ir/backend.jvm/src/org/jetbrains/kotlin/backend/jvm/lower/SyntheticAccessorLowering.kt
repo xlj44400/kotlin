@@ -58,7 +58,7 @@ private class SyntheticAccessorLowering(val context: JvmBackendContext) : IrElem
     private val setterMap = mutableMapOf<IrFieldSymbol, IrSimpleFunctionSymbol>()
 
     override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
-        if (expression.usesDefaultArguments() || expression.symbol.owner.origin == IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER) {
+        if (expression.symbol.owner.origin == IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER) {
             return super.visitFunctionAccess(expression)
         }
         return super.visitExpression(

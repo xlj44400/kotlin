@@ -8,15 +8,11 @@ package org.jetbrains.kotlin.backend.common.lower
 import org.jetbrains.kotlin.backend.common.*
 import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.backend.common.phaser.makeIrFilePhase
-import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
-import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
-import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
-import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
@@ -61,12 +57,12 @@ open class DefaultArgumentStubLowering(open val context: CommonBackendContext) :
 
         if (bodies.isEmpty()) {
             // Fake override
-            val newIrFunction = irFunction.generateDefaultsFunction(context, IrDeclarationOrigin.FAKE_OVERRIDE)
+            val newIrFunction = irFunction.getDefaultsFunction(context, IrDeclarationOrigin.FAKE_OVERRIDE)
 
             return listOf(irFunction, newIrFunction)
         }
 
-        val newIrFunction = irFunction.generateDefaultsFunction(context, IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER)
+        val newIrFunction = irFunction.getDefaultsFunction(context, IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER)
 
         log { "$irFunction -> $newIrFunction" }
         val builder = context.createIrBuilder(newIrFunction.symbol)
@@ -224,140 +220,27 @@ open class DefaultArgumentStubLowering(open val context: CommonBackendContext) :
     private fun log(msg: () -> String) = context.log { "DEFAULT-REPLACER: ${msg()}" }
 }
 
-val DEFAULT_DISPATCH_CALL = object : IrStatementOriginImpl("DEFAULT_DISPATCH_CALL") {}
-
 open class DefaultParameterInjector(val context: CommonBackendContext) : FileLoweringPass {
 
     override fun lower(irFile: IrFile) {
         irFile.transformChildrenVoid(object : IrElementTransformerVoid() {
-            override fun visitDelegatingConstructorCall(expression: IrDelegatingConstructorCall): IrExpression {
+            override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 val declaration = expression.symbol.owner
 
                 if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(declaration))
-                    return super.visitDelegatingConstructorCall(expression)
+                    return super.visitFunctionAccess(expression)
 
                 val argumentsCount = argumentCount(expression)
                 if (argumentsCount == declaration.valueParameters.size)
-                    return super.visitDelegatingConstructorCall(expression)
+                    return super.visitFunctionAccess(expression)
 
-                val (symbolForCall, params) = argumentsForCall(expression)
-                return super.visitDelegatingConstructorCall(
-                    IrDelegatingConstructorCallImpl(
-                        startOffset = expression.startOffset,
-                        endOffset = expression.endOffset,
-                        type = context.irBuiltIns.unitType,
-                        symbol = symbolForCall as IrConstructorSymbol,
-                        descriptor = symbolForCall.descriptor,
-                        typeArgumentsCount = expression.typeArgumentsCount
-                    )
-                        .apply {
-                            copyTypeArgumentsFrom(expression)
-                            params.forEach {
-                                log { "call::params@${it.first.index}/${it.first.name.asString()}: ${ir2string(it.second)}" }
-                                putValueArgument(it.first.index, it.second)
-                            }
-                            dispatchReceiver = expression.dispatchReceiver
-                        }
-                )
+                return super.visitFunctionAccess(transformCall(expression))
             }
 
-            override fun visitEnumConstructorCall(expression: IrEnumConstructorCall): IrExpression {
+            private fun transformCall(expression: IrFunctionAccessExpression): IrFunctionAccessExpression {
                 val declaration = expression.symbol.owner
-
-                if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(declaration))
-                    return super.visitEnumConstructorCall(expression)
-
-                val argumentsCount = argumentCount(expression)
-                if (argumentsCount == declaration.valueParameters.size)
-                    return super.visitEnumConstructorCall(expression)
-
-                val (symbolForCall, params) = argumentsForCall(expression)
-
-                return super.visitEnumConstructorCall(
-                    IrEnumConstructorCallImpl(
-                        startOffset = expression.startOffset,
-                        endOffset = expression.endOffset,
-                        type = context.irBuiltIns.unitType,
-                        symbol = symbolForCall as IrConstructorSymbol,
-                        typeArgumentsCount = expression.typeArgumentsCount
-                    )
-                        .apply {
-                            copyTypeArgumentsFrom(expression)
-                            params.forEach {
-                                log { "call::params@${it.first.index}/${it.first.name.asString()}: ${ir2string(it.second)}" }
-                                putValueArgument(it.first.index, it.second)
-                            }
-                            dispatchReceiver = expression.dispatchReceiver
-
-                        }
-                )
-            }
-
-            override fun visitCall(expression: IrCall): IrExpression {
-                val functionDeclaration = expression.symbol.owner
-
-                if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(functionDeclaration))
-                    return super.visitCall(expression)
-
-                val argumentsCount = argumentCount(expression)
-                if (argumentsCount == functionDeclaration.valueParameters.size)
-                    return super.visitCall(expression)
-
-                val (symbol, params) = argumentsForCall(expression)
-                val descriptor = symbol.descriptor
-                val declaration = symbol.owner
-
-                for (i in 0 until expression.typeArgumentsCount) {
-                    log { "$descriptor [$i]: $expression.getTypeArgument(i)" }
-                }
-                declaration.typeParameters.forEach { log { "$declaration[${it.index}] : $it" } }
-
-                return super.visitCall(
-                    IrCallImpl(
-                        startOffset = expression.startOffset,
-                        endOffset = expression.endOffset,
-                        type = symbol.owner.returnType,
-                        symbol = symbol,
-                        descriptor = descriptor,
-                        typeArgumentsCount = expression.typeArgumentsCount,
-                        origin = DEFAULT_DISPATCH_CALL,
-                        superQualifierSymbol = expression.superQualifierSymbol
-                    )
-                        .apply {
-                            this.copyTypeArgumentsFrom(expression)
-
-                            var shift = 0
-
-                            if (context.defaultArgumentsStubGenerator.stubsAreStatic && declaration !is IrConstructor) {
-                                // Needed to keep JVM ABI
-                                expression.dispatchReceiver?.let { putValueArgument(shift++, it) }
-                                expression.extensionReceiver?.let { putValueArgument(shift++, it) }
-                            } else {
-                                dispatchReceiver = expression.dispatchReceiver
-                                extensionReceiver = expression.extensionReceiver
-                            }
-
-                            params.forEach {
-                                log { "call::params@${it.first.index}/${it.first.name.asString()}: ${ir2string(it.second)}" }
-                                putValueArgument(it.first.index, it.second)
-                            }
-
-                            log { "call::extension@: ${ir2string(expression.extensionReceiver)}" }
-                            log { "call::dispatch@: ${ir2string(expression.dispatchReceiver)}" }
-                        }
-                )
-            }
-
-            private fun argumentsForCall(expression: IrFunctionAccessExpression): Pair<IrFunctionSymbol, List<Pair<IrValueParameter, IrExpression?>>> {
-                val declaration = expression.symbol.owner
-                val (realFunctionSymbol, params) = context.defaultArgumentsStubGenerator.argumentsForCall(context, expression)
-                val realFunction = realFunctionSymbol.owner
-
-                log { "$declaration -> $realFunction" }
-                params.forEach {
-                    log { "descriptor::${realFunction.name.asString()}#${it.first.index}: ${it.first.name.asString()}" }
-                }
-                return Pair(realFunctionSymbol, params)
+                val realFunction = declaration.getRealDefaultsFunction(context)!!
+                return context.defaultArgumentsStubGenerator.transformCall(context, expression, realFunction)
             }
 
             private fun argumentCount(expression: IrMemberAccessExpression): Int {
@@ -393,7 +276,7 @@ private fun IrFunction.generateDefaultsFunctionImpl(context: CommonBackendContex
                     IrDeclarationOrigin.FAKE_OVERRIDE
                 }
                 val defaultsBaseFun =
-                    baseFun.generateDefaultsFunction(context, baseOrigin)
+                    baseFun.getDefaultsFunction(context, baseOrigin)
                 (newFunction as IrSimpleFunction).overriddenSymbols.add((defaultsBaseFun as IrSimpleFunction).symbol)
             }
         }
@@ -402,24 +285,25 @@ private fun IrFunction.generateDefaultsFunctionImpl(context: CommonBackendContex
     return newFunction
 }
 
-fun IrFunction.generateDefaultsFunction(context: CommonBackendContext, origin: IrDeclarationOrigin): IrFunction =
+internal fun IrFunction.getDefaultsFunction(context: CommonBackendContext, origin: IrDeclarationOrigin): IrFunction =
     context.ir.defaultParameterDeclarationsCache.getOrPut(this) {
         generateDefaultsFunctionImpl(context, origin)
     }
 
-fun nullConst(context: CommonBackendContext, expression: IrElement?, type: IrType): IrExpression {
-    val startOffset = expression?.startOffset ?: UNDEFINED_OFFSET
-    val endOffset = expression?.endOffset ?: UNDEFINED_OFFSET
-    return when {
-        type.isFloat() -> IrConstImpl.float(startOffset, endOffset, type, 0.0F)
-        type.isDouble() -> IrConstImpl.double(startOffset, endOffset, type, 0.0)
-        type.isBoolean() -> IrConstImpl.boolean(startOffset, endOffset, type, false)
-        type.isByte() -> IrConstImpl.byte(startOffset, endOffset, type, 0)
-        type.isChar() -> IrConstImpl.char(startOffset, endOffset, type, 0.toChar())
-        type.isShort() -> IrConstImpl.short(startOffset, endOffset, type, 0)
-        type.isInt() -> IrConstImpl.int(startOffset, endOffset, type, 0)
-        type.isLong() -> IrConstImpl.long(startOffset, endOffset, type, 0)
-        else -> IrConstImpl.constNull(startOffset, endOffset, context.irBuiltIns.nothingNType)
-    }
+// Get the defaults stub that should actually be called, rather than a fake override.
+fun IrFunction.getRealDefaultsFunction(context: CommonBackendContext): IrFunction? {
+    val keyFunction = findSuperMethodWithDefaultArguments(context) ?: return null
+    return keyFunction.getDefaultsFunction(context, IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER)
 }
 
+private fun IrFunction.findSuperMethodWithDefaultArguments(context: CommonBackendContext): IrFunction? {
+    if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(this)) return null
+
+    if (this !is IrSimpleFunction) return this
+
+    for (s in overriddenSymbols) {
+        s.owner.findSuperMethodWithDefaultArguments(context)?.let { return it }
+    }
+
+    return this
+}
