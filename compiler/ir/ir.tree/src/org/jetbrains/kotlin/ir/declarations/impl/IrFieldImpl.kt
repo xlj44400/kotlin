@@ -47,6 +47,12 @@ class IrFieldImpl(
 ) : IrDeclarationBase(startOffset, endOffset, origin),
     IrField {
 
+    init {
+        if (name.asString() == "value") {
+            println("heya!")
+        }
+    }
+
     constructor(
         startOffset: Int,
         endOffset: Int,

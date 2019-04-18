@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.psi2ir.intermediate
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.ir.builders.IrGeneratorContext
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
@@ -27,21 +27,27 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFieldSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.psi2ir.generators.GeneratorContext
+import org.jetbrains.kotlin.psi2ir.generators.toDispatchReceiverExpectedType
 
 abstract class PropertyLValueBase(
-    protected val context: IrGeneratorContext,
-    val scope: Scope,
-    val startOffset: Int,
-    val endOffset: Int,
-    val origin: IrStatementOrigin?,
+    protected val context: GeneratorContext,
+    protected val scope: Scope,
+    protected val startOffset: Int,
+    protected val endOffset: Int,
+    protected val origin: IrStatementOrigin?,
+    protected val propertyDescriptor: PropertyDescriptor,
     override val type: IrType,
-    val callReceiver: CallReceiver,
-    val superQualifier: IrClassSymbol?
+    protected val callReceiver: CallReceiver,
+    protected val superQualifier: IrClassSymbol?
 ) : LValue, AssignmentReceiver {
     override fun assign(withLValue: (LValue) -> IrExpression) =
         callReceiver.call { dispatchReceiverValue, extensionReceiverValue ->
             val dispatchReceiverVariable2 = dispatchReceiverValue?.let {
-                scope.createTemporaryVariable(dispatchReceiverValue.load(), "this")
+                scope.createTemporaryVariable(
+                    dispatchReceiverValue.load().toDispatchReceiverExpectedType(propertyDescriptor, context),
+                    "this"
+                )
             }
             val dispatchReceiverValue2 = dispatchReceiverVariable2?.let { VariableLValue(context, it) }
 
@@ -66,17 +72,18 @@ abstract class PropertyLValueBase(
 }
 
 class FieldPropertyLValue(
-    context: IrGeneratorContext,
+    context: GeneratorContext,
     scope: Scope,
     startOffset: Int,
     endOffset: Int,
     origin: IrStatementOrigin?,
-    val field: IrFieldSymbol,
+    propertyDescriptor: PropertyDescriptor,
+    private val field: IrFieldSymbol,
     type: IrType,
     callReceiver: CallReceiver,
     superQualifier: IrClassSymbol?
 ) :
-    PropertyLValueBase(context, scope, startOffset, endOffset, origin, type, callReceiver, superQualifier) {
+    PropertyLValueBase(context, scope, startOffset, endOffset, origin, propertyDescriptor, type, callReceiver, superQualifier) {
 
     override fun load(): IrExpression =
         callReceiver.call { dispatchReceiverValue, extensionReceiverValue ->
@@ -85,7 +92,7 @@ class FieldPropertyLValue(
                 startOffset, endOffset,
                 field,
                 type,
-                dispatchReceiverValue?.load(),
+                dispatchReceiverValue?.load()?.toDispatchReceiverExpectedType(propertyDescriptor, context),
                 origin,
                 superQualifier
             )
@@ -97,7 +104,7 @@ class FieldPropertyLValue(
             IrSetFieldImpl(
                 startOffset, endOffset,
                 field,
-                dispatchReceiverValue?.load(),
+                dispatchReceiverValue?.load()?.toDispatchReceiverExpectedType(propertyDescriptor, context),
                 irExpression,
                 context.irBuiltIns.unitType,
                 origin,
@@ -109,6 +116,7 @@ class FieldPropertyLValue(
         FieldPropertyLValue(
             context,
             scope, startOffset, endOffset, origin,
+            propertyDescriptor,
             field,
             type,
             SimpleCallReceiver(dispatchReceiver, extensionReceiver),
@@ -117,20 +125,21 @@ class FieldPropertyLValue(
 }
 
 class AccessorPropertyLValue(
-    context: IrGeneratorContext,
+    context: GeneratorContext,
     scope: Scope,
     startOffset: Int,
     endOffset: Int,
     origin: IrStatementOrigin?,
     type: IrType,
-    val getter: IrFunctionSymbol?,
-    val getterDescriptor: FunctionDescriptor?,
-    val setter: IrFunctionSymbol?,
-    val setterDescriptor: FunctionDescriptor?,
-    val typeArguments: List<IrType>?,
+    propertyDescriptor: PropertyDescriptor,
+    private val getter: IrFunctionSymbol?,
+    private val getterDescriptor: FunctionDescriptor?,
+    private val setter: IrFunctionSymbol?,
+    private val setterDescriptor: FunctionDescriptor?,
+    private val typeArguments: List<IrType>?,
     callReceiver: CallReceiver,
     superQualifier: IrClassSymbol?
-) : PropertyLValueBase(context, scope, startOffset, endOffset, origin, type, callReceiver, superQualifier) {
+) : PropertyLValueBase(context, scope, startOffset, endOffset, origin, propertyDescriptor, type, callReceiver, superQualifier) {
 
     private val typeArgumentsCount = typeArguments?.size ?: 0
 
@@ -147,7 +156,9 @@ class AccessorPropertyLValue(
                 type,
                 getter!!, getterDescriptor,
                 typeArgumentsCount,
-                dispatchReceiverValue?.load(),
+                dispatchReceiverValue?.run {
+                    load().toDispatchReceiverExpectedType(propertyDescriptor, context)
+                },
                 extensionReceiverValue?.load(),
                 origin,
                 superQualifier
@@ -163,7 +174,9 @@ class AccessorPropertyLValue(
                 context.irBuiltIns.unitType,
                 setter!!, setterDescriptor,
                 typeArgumentsCount,
-                dispatchReceiverValue?.load(),
+                dispatchReceiverValue?.run {
+                    load().toDispatchReceiverExpectedType(propertyDescriptor, context)
+                },
                 extensionReceiverValue?.load(),
                 irExpression,
                 origin,
@@ -177,7 +190,8 @@ class AccessorPropertyLValue(
         AccessorPropertyLValue(
             context, scope,
             startOffset, endOffset, origin,
-            type, getter, getterDescriptor, setter, setterDescriptor,
+            type,
+            propertyDescriptor, getter, getterDescriptor, setter, setterDescriptor,
             typeArguments,
             SimpleCallReceiver(dispatchReceiver, extensionReceiver),
             superQualifier

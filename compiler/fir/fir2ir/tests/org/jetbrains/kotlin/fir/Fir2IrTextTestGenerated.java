@@ -1635,5 +1635,15 @@ public class Fir2IrTextTestGenerated extends AbstractFir2IrTextTest {
         public void testNullabilityAssertionOnExtensionReceiver() throws Exception {
             runTest("compiler/testData/ir/irText/types/nullabilityAssertionOnExtensionReceiver.kt");
         }
+
+        @TestMetadata("smartCastOnFieldReceiverOfGenericType.kt")
+        public void testSmartCastOnFieldReceiverOfGenericType() throws Exception {
+            runTest("compiler/testData/ir/irText/types/smartCastOnFieldReceiverOfGenericType.kt");
+        }
+
+        @TestMetadata("smartCastOnReceiverOfGenericType.kt")
+        public void testSmartCastOnReceiverOfGenericType() throws Exception {
+            runTest("compiler/testData/ir/irText/types/smartCastOnReceiverOfGenericType.kt");
+        }
     }
 }

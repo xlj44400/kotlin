@@ -8,7 +8,6 @@ package org.jetbrains.kotlin.backend.jvm.lower
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.phaser.makeIrFilePhase
 import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
-import org.jetbrains.kotlin.backend.jvm.JvmGeneratorExtensions
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
@@ -27,9 +26,7 @@ internal val jvmCoercionToUnitPhase = makeIrFilePhase(
 
 class JvmCoercionToUnitPatcher(val context: JvmBackendContext) :
     InsertImplicitCasts(
-        context.builtIns, context.irBuiltIns,
-        TypeTranslator(context.ir.symbols.externalSymbolTable, context.state.languageVersionSettings, context.builtIns),
-        JvmGeneratorExtensions.samConversion
+        context.irBuiltIns, TypeTranslator(context.ir.symbols.externalSymbolTable, context.state.languageVersionSettings, context.builtIns)
     ),
     FileLoweringPass {
 

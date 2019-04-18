@@ -35,7 +35,7 @@ class IrLazyProperty(
     override val isLateinit: Boolean,
     override val isDelegated: Boolean,
     override val isExternal: Boolean,
-    private val stubGenerator: DeclarationStubGenerator,
+    stubGenerator: DeclarationStubGenerator,
     typeTranslator: TypeTranslator,
     private val bindingContext: BindingContext? = null
 ) :

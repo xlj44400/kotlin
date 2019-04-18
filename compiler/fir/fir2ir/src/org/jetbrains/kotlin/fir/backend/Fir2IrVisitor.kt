@@ -1083,7 +1083,7 @@ internal class Fir2IrVisitor(
 
             IrTypeOperatorCallImpl(
                 startOffset, endOffset, irType, irTypeOperator, irTypeOperand,
-                irTypeOperand.classifierOrFail, typeOperatorCall.argument.toIrExpression()
+                typeOperatorCall.argument.toIrExpression()
             )
         }
     }

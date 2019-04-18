@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.descriptors.impl.SyntheticFieldDescriptor
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.types.IrDynamicType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.util.referenceFunction
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.psi.KtElement
@@ -73,7 +72,6 @@ class CallGenerator(statementGenerator: StatementGenerator) : StatementGenerator
             targetType,
             IrTypeOperator.SAM_CONVERSION,
             targetType,
-            targetType.classifierOrFail,
             statementGenerator.castArgumentToFunctionalInterfaceForSamType(
                 call.irValueArgumentsByIndex[0]!!,
                 targetKotlinType
@@ -182,7 +180,7 @@ class CallGenerator(statementGenerator: StatementGenerator) : StatementGenerator
                     startOffset, endOffset,
                     fieldSymbol,
                     irType,
-                    dispatchReceiverValue?.load(),
+                    dispatchReceiverValue?.load()?.toDispatchReceiverExpectedType(descriptor),
                     IrStatementOrigin.GET_PROPERTY,
                     superQualifierSymbol
                 )
@@ -206,7 +204,7 @@ class CallGenerator(statementGenerator: StatementGenerator) : StatementGenerator
                         getterSymbol,
                         getMethodDescriptor,
                         descriptor.typeParametersCount,
-                        dispatchReceiverValue?.load(),
+                        dispatchReceiverValue?.load()?.toDispatchReceiverExpectedType(getMethodDescriptor),
                         extensionReceiverValue?.load(),
                         IrStatementOrigin.GET_PROPERTY,
                         superQualifierSymbol
@@ -309,12 +307,15 @@ class CallGenerator(statementGenerator: StatementGenerator) : StatementGenerator
                     superQualifierSymbol
                 ).apply {
                     putTypeArguments(call.typeArguments) { it.toIrType() }
-                    this.dispatchReceiver = dispatchReceiverValue?.load()
+                    this.dispatchReceiver = dispatchReceiverValue?.load()?.toDispatchReceiverExpectedType(functionDescriptor)
                     this.extensionReceiver = extensionReceiverValue?.load()
                 }
                 addParametersToCall(startOffset, endOffset, call, irCall, returnType)
             }
         }
+
+    private fun IrExpression.toDispatchReceiverExpectedType(descriptor: CallableDescriptor) =
+        toDispatchReceiverExpectedType(descriptor, context)
 
     private fun addParametersToCall(
         startOffset: Int,
