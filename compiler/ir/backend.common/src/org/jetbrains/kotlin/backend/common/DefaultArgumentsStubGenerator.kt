@@ -319,8 +319,8 @@ class DefaultArgumentsStubGenerator(
                     expression.startOffset, expression.endOffset, expression.type,
                     stub.symbol, stub.descriptor,
                     expression.typeArgumentsCount,
-                    origin = IrStatementOrigin.DEFAULT_DISPATCH_CALL
-
+                    origin = IrStatementOrigin.DEFAULT_DISPATCH_CALL,
+                    superQualifierSymbol = expression.superQualifierSymbol
                 )
                 else -> error("Unknown subclass of IrFunctionAccessExpression: ${expression}")
             }
