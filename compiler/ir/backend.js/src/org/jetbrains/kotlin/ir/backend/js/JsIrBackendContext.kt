@@ -190,14 +190,16 @@ class JsIrBackendContext(
         override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
     }
 
-    override val defaultArgumentsStubGenerator = DefaultArgumentsStubGenerator(
-        irBuiltIns,
-        ir.symbols.defaultConstructorMarker.owner.defaultType,
-        skipInlineMethods = true,
-        skipExternalMethods = false,
-        shouldGenerateHandlerParameterForDefaultBodyFun = true,
-        stubsAreStatic = false
-    )
+    override val defaultArgumentsStubGenerator by lazy {
+        DefaultArgumentsStubGenerator(
+            irBuiltIns,
+            ir.symbols.defaultConstructorMarker.owner.defaultType,
+            skipInlineMethods = true,
+            skipExternalMethods = false,
+            shouldGenerateHandlerParameterForDefaultBodyFun = true,
+            stubsAreStatic = false
+        )
+    }
 
     // classes forced to be loaded
 
