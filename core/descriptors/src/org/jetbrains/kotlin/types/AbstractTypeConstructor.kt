@@ -20,8 +20,6 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.storage.StorageManager
-import org.jetbrains.kotlin.storage.getValue
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 abstract class AbstractTypeConstructor(private val storageManager: StorageManager) : TypeConstructor {
     override fun getSupertypes() = supertypes().supertypesWithoutCycles
@@ -63,19 +61,6 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
         override fun toString() = "$moduleDescriptor: ${this@AbstractTypeConstructor}"
     }
 
-    private val supertypesByModule by storageManager.createLazyValue {
-        val allSupertypes = supertypes().allSupertypes
-        allSupertypes.any(KotlinType::isExpectClass)
-    }
-
-    fun getSupertypes(moduleDescriptor: ModuleDescriptor) =
-        if (supertypesByModule)
-            moduleDescriptor.getOrPutSupertypesForForClass(declarationDescriptor) {
-                computeLazyValue(moduleDescriptor, supertypes().allSupertypes).invoke().supertypesWithoutCycles
-            }
-        else
-            getSupertypes()
-
     // In current version diagnostic about loops in supertypes is reported on each vertex (supertype reference) that lies on the cycle.
     // To achieve that we store both versions of supertypes --- before and after loops disconnection.
     // The first one is used for computation of neighbours in supertypes graph (see Companion.computeNeighbours)
@@ -84,13 +69,13 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
         var supertypesWithoutCycles: List<KotlinType> = listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES)
     }
 
-    private val supertypes = computeLazyValue(moduleDescriptor = null)
+    private val supertypes = computeLazyValue()
 
-    private fun computeLazyValue(moduleDescriptor: ModuleDescriptor?, alreadyComputedSupertypes: Collection<KotlinType>? = null) =
+    private fun computeLazyValue() =
         storageManager.createLazyValueWithPostCompute(
             {
-                val allSupertypes = alreadyComputedSupertypes ?: computeSupertypes()
-                Supertypes(allSupertypes.refineIfNeeded(moduleDescriptor))
+                val allSupertypes = computeSupertypes()
+                Supertypes(allSupertypes)
             },
             { Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES)) },
             { supertypes ->
@@ -100,11 +85,9 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
                 var resultWithoutCycles =
                     supertypeLoopChecker.findLoopsInSupertypesAndDisconnect(
                         this, supertypes.allSupertypes,
-                        { it.computeNeighbours(useCompanions = false).refineIfNeeded(moduleDescriptor) },
+                        { it.computeNeighbours(useCompanions = false) },
                         {
-                            if (alreadyComputedSupertypes == null) {
-                                reportSupertypeLoopError(it)
-                            }
+                            reportSupertypeLoopError(it)
                         }
                     )
 
@@ -119,20 +102,12 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
                     this, resultWithoutCycles,
                     { it.computeNeighbours(useCompanions = true) },
                     {
-                        if (alreadyComputedSupertypes == null) {
-                            reportScopesLoopError(it)
-                        }
+                        reportScopesLoopError(it)
                     }
                 )
 
                 supertypes.supertypesWithoutCycles = (resultWithoutCycles as? List<KotlinType>) ?: resultWithoutCycles.toList()
             })
-
-    private fun Collection<KotlinType>.refineIfNeeded(moduleDescriptor: ModuleDescriptor?) =
-        if (moduleDescriptor == null)
-            this
-        else
-            map { it.refine(moduleDescriptor) }
 
     private fun TypeConstructor.computeNeighbours(useCompanions: Boolean): Collection<KotlinType> =
         (this as? AbstractTypeConstructor)?.let { abstractClassifierDescriptor ->
@@ -153,8 +128,3 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
     // Only for debugging
     fun renderAdditionalDebugInformation(): String = "supertypes=${supertypes.renderDebugInformation()}"
 }
-
-private fun KotlinType.isExpectClass() = constructor.isExpectClass()
-
-internal fun TypeConstructor.isExpectClass() =
-    declarationDescriptor?.safeAs<ClassDescriptor>()?.isExpect == true
