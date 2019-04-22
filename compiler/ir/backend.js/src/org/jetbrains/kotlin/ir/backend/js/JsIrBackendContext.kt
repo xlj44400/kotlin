@@ -195,7 +195,8 @@ class JsIrBackendContext(
             irBuiltIns,
             ir.symbols.defaultConstructorMarker.owner.defaultType,
             skipInlineMethods = true,
-            skipExternalMethods = false,
+            skipExternalMethodsGeneration = false,
+            skipExternalMethodsInjection = true,
             shouldGenerateHandlerParameterForDefaultBodyFun = true,
             stubsAreStatic = false
         )

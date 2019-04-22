@@ -45,7 +45,11 @@ open class DefaultArgumentStubLowering(open val context: CommonBackendContext) :
     private val symbols get() = context.ir.symbols
 
     private fun lower(irFunction: IrFunction): List<IrFunction> {
-        if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(irFunction))
+        if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(
+                irFunction,
+                DefaultArgumentsStubGenerator.StubCheckMode.GENERATION
+            )
+        )
             return listOf(irFunction)
 
         val backendContext = context
@@ -227,7 +231,11 @@ open class DefaultParameterInjector(val context: CommonBackendContext) : FileLow
             override fun visitFunctionAccess(expression: IrFunctionAccessExpression): IrExpression {
                 val declaration = expression.symbol.owner
 
-                if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(declaration))
+                if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(
+                        declaration,
+                        DefaultArgumentsStubGenerator.StubCheckMode.INJECTION
+                    )
+                )
                     return super.visitFunctionAccess(expression)
 
                 val argumentsCount = argumentCount(expression)
@@ -269,7 +277,11 @@ private fun IrFunction.generateDefaultsFunctionImpl(context: CommonBackendContex
     if (origin == IrDeclarationOrigin.FAKE_OVERRIDE) {
         for (baseFunSymbol in (this as IrSimpleFunction).overriddenSymbols) {
             val baseFun = baseFunSymbol.owner
-            if (context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(baseFun)) {
+            if (context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(
+                    baseFun,
+                    DefaultArgumentsStubGenerator.StubCheckMode.GENERATION
+                )
+            ) {
                 val baseOrigin = if (baseFun.valueParameters.any { it.defaultValue != null }) {
                     IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER
                 } else {
@@ -297,7 +309,11 @@ fun IrFunction.getRealDefaultsFunction(context: CommonBackendContext): IrFunctio
 }
 
 private fun IrFunction.findSuperMethodWithDefaultArguments(context: CommonBackendContext): IrFunction? {
-    if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(this)) return null
+    if (!context.defaultArgumentsStubGenerator.functionNeedsDefaultArgumentsStub(
+            this,
+            DefaultArgumentsStubGenerator.StubCheckMode.INJECTION
+        )
+    ) return null
 
     if (this !is IrSimpleFunction) return this
 

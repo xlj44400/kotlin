@@ -48,7 +48,8 @@ class JvmBackendContext(
         irBuiltIns,
         ir.symbols.defaultConstructorMarker.owner.defaultType.makeNullable(),
         skipInlineMethods = false,
-        skipExternalMethods = false,
+        skipExternalMethodsGeneration = false,
+        skipExternalMethodsInjection = false,
         shouldGenerateHandlerParameterForDefaultBodyFun = true,
         stubsAreStatic = true
     )

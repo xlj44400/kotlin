@@ -44,19 +44,23 @@ class DefaultArgumentsStubGenerator(
     private val irBuiltIns: IrBuiltIns,
     private val defaultConstructorMarker: IrType,
     private val skipInlineMethods: Boolean = true,
-    private val skipExternalMethods: Boolean = false,
+    private val skipExternalMethodsGeneration: Boolean = false,
+    private val skipExternalMethodsInjection: Boolean = false,
     private val shouldGenerateHandlerParameterForDefaultBodyFun: Boolean = false,
     val stubsAreStatic: Boolean = false
 ) {
+    enum class StubCheckMode { GENERATION, INJECTION }
+
     // TODO this implementation is exponential
-    fun functionNeedsDefaultArgumentsStub(irFunction: IrFunction): Boolean {
+    fun functionNeedsDefaultArgumentsStub(irFunction: IrFunction, mode: StubCheckMode): Boolean {
         if (skipInlineMethods && irFunction.isInline) return false
-        if (skipExternalMethods && irFunction.isEffectivelyExternal()) return false
+        if (mode === StubCheckMode.GENERATION && skipExternalMethodsGeneration && irFunction.isEffectivelyExternal()) return false
+        if (mode == StubCheckMode.INJECTION && skipExternalMethodsInjection && irFunction.isEffectivelyExternal()) return false
         if (irFunction.valueParameters.any { it.defaultValue != null}) return true
 
         if (irFunction !is IrSimpleFunction) return false
 
-        return irFunction.overriddenSymbols.any { functionNeedsDefaultArgumentsStub(it.owner) }
+        return irFunction.overriddenSymbols.any { functionNeedsDefaultArgumentsStub(it.owner, mode) }
     }
 
     fun generateStub(irFunction: IrFunction, origin: IrDeclarationOrigin): IrFunction {
