@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.gradle
 import org.gradle.api.logging.LogLevel
 import org.jetbrains.kotlin.gradle.plugin.MULTIPLE_KOTLIN_PLUGINS_LOADED_WARNING
 import org.jetbrains.kotlin.gradle.plugin.MULTIPLE_KOTLIN_PLUGINS_SPECIFIC_PROJECTS_WARNING
+import org.jetbrains.kotlin.gradle.scripting.internal.ScriptingGradleSubplugin
 import org.jetbrains.kotlin.gradle.tasks.USING_JVM_INCREMENTAL_COMPILATION_MESSAGE
 import org.jetbrains.kotlin.gradle.util.*
 import org.junit.Test
@@ -963,4 +964,12 @@ class KotlinGradleIT : BaseGradleIT() {
                 assertContains("Required com.example.compilation 'bar'")
             }
         }
+
+    @Test
+    fun testNoScriptingWarning() = with(Project("simpleProject")) {
+        // KT-31124
+        build {
+            assertNotContains(ScriptingGradleSubplugin.MISCONFIGURATION_MESSAGE_SUFFIX)
+        }
+    }
 }
