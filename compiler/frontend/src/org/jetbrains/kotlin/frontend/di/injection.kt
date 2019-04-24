@@ -16,10 +16,10 @@
 
 package org.jetbrains.kotlin.frontend.di
 
-import org.jetbrains.kotlin.platform.TargetPlatform
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.config.RefineKotlinTypeCheckerImpl
 import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useImpl
 import org.jetbrains.kotlin.container.useInstance
@@ -28,8 +28,9 @@ import org.jetbrains.kotlin.contracts.ContractDeserializerImpl
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.incremental.components.ExpectActualTracker
 import org.jetbrains.kotlin.incremental.components.LookupTracker
-import org.jetbrains.kotlin.platform.TargetPlatformVersion
 import org.jetbrains.kotlin.load.kotlin.MetadataFinderFactory
+import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.platform.TargetPlatformVersion
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.components.ClassicTypeSystemContextForCS
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactoryImpl
@@ -90,6 +91,8 @@ private fun StorageComponentContainer.configurePlatformIndependentComponents() {
     useImpl<CompilerDeserializationConfiguration>()
 
     useImpl<ClassicTypeSystemContextForCS>()
+
+    useImpl<RefineKotlinTypeCheckerImpl>()
 }
 
 /**
