@@ -40,7 +40,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin.native">
-        <gradleLauncherProvider implementation="org.jetbrains.konan.gradle.execution.CLionGradleKonanLauncherProvider" />
+        <gradleLauncherProvider implementation="org.jetbrains.konan.gradle.execution.CidrGradleKonanLauncherProvider" />
     </extensions>
 
     <extensions defaultExtensionNs="cidr.debugger">
