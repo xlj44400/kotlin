@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.frontend.java.di
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltInsPackageFragmentProvider
+import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.config.JvmAnalysisFlags
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
@@ -125,7 +126,10 @@ fun StorageComponentContainer.configureJavaSpecificComponents(
 
     useInstance(javaClassTracker ?: JavaClassesTracker.Default)
     useInstance(
-        JavaResolverSettings.create(isReleaseCoroutines = languageVersionSettings.supportsFeature(LanguageFeature.ReleaseCoroutines))
+        JavaResolverSettings.create(
+            isReleaseCoroutines = languageVersionSettings.supportsFeature(LanguageFeature.ReleaseCoroutines),
+            useRefinedTypes = languageVersionSettings.getFlag(AnalysisFlags.useTypeRefinement)
+        )
     )
 
     useImpl<FilesByFacadeFqNameIndexer>()
