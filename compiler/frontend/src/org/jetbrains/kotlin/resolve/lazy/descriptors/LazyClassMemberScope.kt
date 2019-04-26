@@ -78,8 +78,8 @@ open class LazyClassMemberScope(
 
     protected open fun computeExtraDescriptors(location: LookupLocation): Collection<DeclarationDescriptor> {
         val result = ArrayList<DeclarationDescriptor>()
-        for (supertype in thisDescriptor.typeConstructor.supertypes) {
-            for (descriptor in supertype.refine(moduleDescriptor).memberScope.getContributedDescriptors()) {
+        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
+            for (descriptor in supertype.memberScope.getContributedDescriptors()) {
                 if (descriptor is FunctionDescriptor) {
                     result.addAll(getContributedFunctions(descriptor.name, location))
                 } else if (descriptor is PropertyDescriptor) {
@@ -209,7 +209,7 @@ open class LazyClassMemberScope(
         val location = NoLookupLocation.FOR_ALREADY_TRACKED
 
         val fromSupertypes = arrayListOf<SimpleFunctionDescriptor>()
-        for (supertype in supertypes) {
+        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
             fromSupertypes.addAll(supertype.memberScope.getContributedFunctions(name, location))
         }
         result.addAll(generateDelegatingDescriptors(name, EXTRACT_FUNCTIONS, result))
@@ -351,7 +351,7 @@ open class LazyClassMemberScope(
 
         // Members from supertypes
         val fromSupertypes = ArrayList<PropertyDescriptor>()
-        for (supertype in supertypes) {
+        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
             fromSupertypes.addAll(supertype.memberScope.getContributedVariables(name, NoLookupLocation.FOR_ALREADY_TRACKED))
         }
         result.addAll(generateDelegatingDescriptors(name, EXTRACT_PROPERTIES, result))
