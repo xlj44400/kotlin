@@ -25,6 +25,10 @@
                               implementationClass="org.jetbrains.konan.gradle.execution.GradleKonanTargetRunLineMarkerProvider"/>
     <stepsBeforeRunProvider implementation="org.jetbrains.konan.gradle.execution.GradleKonanBuildBeforeRunTaskProvider"/>
     <externalProjectDataService implementation="org.jetbrains.konan.gradle.KonanProjectDataService"/>
+    <programRunner implementation="org.jetbrains.konan.execution.KonanRunner"/>
+    <applicationService serviceInterface="com.intellij.openapi.module.ModuleTypeManager"
+                        serviceImplementation="org.jetbrains.konan.KonanModuleTypeManager"
+                        overrides="true"/>
   </extensions>
 
   <extensionPoints>
