@@ -81,13 +81,7 @@ public actual inline fun StringBuilder.clear(): StringBuilder = this.clear()
 
 
 @SinceKotlin("1.3")
-public actual open class CharacterCodingException actual constructor() : Exception() {
-    private var msg: String? = null
-
-    constructor(message: String?) : this() {
-        this.msg = message
-    }
-
-    override val message: String?
-        get() = msg
+@ExperimentalStdlibApi
+public actual open class CharacterCodingException constructor(override val message: String?) : Exception() {
+    actual constructor() : this(null)
 }

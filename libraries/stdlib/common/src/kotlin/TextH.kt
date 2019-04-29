@@ -86,6 +86,7 @@ expect enum class RegexOption {
  *  The exception thrown when a character encoding or decoding error occurs.
  */
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public expect open class CharacterCodingException() : Exception
 
 
@@ -125,6 +126,7 @@ public expect fun String(chars: CharArray, offset: Int, length: Int): String
  * @throws IllegalArgumentException if [startIndex] is less greater than [endIndex].
  */
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public expect fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = this.size): String
 
 /**
@@ -137,6 +139,7 @@ public expect fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = 
  * @throws IllegalArgumentException if [startIndex] is less greater than [endIndex].
  */
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public expect fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.length): CharArray
 
 /**
@@ -151,6 +154,7 @@ public expect fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.l
  * @throws CharacterCodingException if the byte array contains malformed UTF-8 byte sequence and [throwOnInvalidSequence] is true.
  */
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public expect fun ByteArray.decodeToString(
     startIndex: Int = 0,
     endIndex: Int = this.size,
@@ -169,6 +173,7 @@ public expect fun ByteArray.decodeToString(
  * @throws CharacterCodingException if this string contains malformed char sequence and [throwOnInvalidSequence] is true.
  */
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public expect fun String.encodeToByteArray(
     startIndex: Int = 0,
     endIndex: Int = this.length,

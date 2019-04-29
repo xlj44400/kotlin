@@ -113,6 +113,7 @@ public actual inline fun String.toLowerCase(): String = (this as java.lang.Strin
 
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
+@ExperimentalStdlibApi
 public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = this.size): String {
     kotlin.collections.AbstractList.checkBoundsIndexes(startIndex, endIndex, this.size)
     return String(this, startIndex, endIndex - startIndex)
@@ -120,6 +121,7 @@ public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = 
 
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
+@ExperimentalStdlibApi
 public actual fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.length): CharArray {
     checkStringBounds(startIndex, endIndex, length)
     return toCharArray(CharArray(endIndex - startIndex), 0, startIndex, endIndex)
@@ -127,6 +129,7 @@ public actual fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.l
 
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
+@ExperimentalStdlibApi
 public actual fun ByteArray.decodeToString(
     startIndex: Int = 0,
     endIndex: Int = this.size,
@@ -147,6 +150,7 @@ public actual fun ByteArray.decodeToString(
 
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
+@ExperimentalStdlibApi
 public actual fun String.encodeToByteArray(
     startIndex: Int = 0,
     endIndex: Int = this.length,

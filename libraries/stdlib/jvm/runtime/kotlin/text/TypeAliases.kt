@@ -13,4 +13,5 @@ package kotlin.text
 @SinceKotlin("1.1") public actual typealias StringBuilder = java.lang.StringBuilder
 
 @SinceKotlin("1.3")
+@ExperimentalStdlibApi
 public actual typealias CharacterCodingException = java.nio.charset.CharacterCodingException
