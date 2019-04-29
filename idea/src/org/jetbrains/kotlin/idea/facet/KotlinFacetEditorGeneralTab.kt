@@ -254,6 +254,7 @@ class KotlinFacetEditorGeneralTab(
 
         with(editor.compilerConfigurable) {
             reportWarningsCheckBox.validateOnChange()
+            enableNewInferenceInIDECheckBox.validateOnChange()
             additionalArgsOptionsField.textField.validateOnChange()
             generateSourceMapsCheckBox.validateOnChange()
             outputPrefixFile.textField.validateOnChange()

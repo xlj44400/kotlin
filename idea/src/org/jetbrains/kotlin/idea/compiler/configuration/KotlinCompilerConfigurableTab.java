@@ -110,6 +110,7 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
     private JLabel labelForSourceMapPrefix;
     private JComboBox sourceMapEmbedSources;
     private JPanel coroutinesPanel;
+    private ThreeStateCheckBox enableNewInferenceInIDECheckBox;
     private boolean isEnabled = true;
 
     public KotlinCompilerConfigurableTab(
@@ -150,6 +151,7 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
         }
 
         reportWarningsCheckBox.setThirdStateEnabled(isMultiEditor);
+        enableNewInferenceInIDECheckBox.setThirdStateEnabled(isMultiEditor);
 
         if (isProjectSettings) {
             List<String> modulesOverridingProjectSettings = ArraysKt.mapNotNull(
@@ -633,6 +635,10 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
 
     public ThreeStateCheckBox getReportWarningsCheckBox() {
         return reportWarningsCheckBox;
+    }
+
+    public ThreeStateCheckBox getEnableNewInferenceInIDECheckBox() {
+        return enableNewInferenceInIDECheckBox;
     }
 
     public RawCommandLineEditor getAdditionalArgsOptionsField() {
