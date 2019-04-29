@@ -44,7 +44,7 @@ open class TypeApproximatorConfiguration {
     open val errorType get() = false
     open val integerLiteralType: Boolean = false // IntegerLiteralTypeConstructor
     open val definitelyNotNullType get() = true
-    open val intersection: IntersectionStrategy = TO_COMMON_SUPERTYPE
+    open val intersection: IntersectionStrategy = ALLOWED
 
     open val typeVariable: (TypeVariableTypeConstructorMarker) -> Boolean = { false }
     open fun capturedType(ctx: TypeSystemInferenceExtensionContext, type: CapturedTypeMarker): Boolean =
@@ -60,7 +60,6 @@ open class TypeApproximatorConfiguration {
 
     object LocalDeclaration : AllFlexibleSameValue() {
         override val allFlexible get() = true
-        override val intersection get() = ALLOWED
         override val errorType get() = true
         override val integerLiteralType: Boolean get() = true
     }
@@ -81,7 +80,6 @@ open class TypeApproximatorConfiguration {
         override fun capturedType(ctx: TypeSystemInferenceExtensionContext, type: CapturedTypeMarker): Boolean =
             type.captureStatus(ctx) != approximatedCapturedStatus
 
-        override val intersection get() = IntersectionStrategy.ALLOWED
         override val typeVariable: (TypeVariableTypeConstructorMarker) -> Boolean get() = { true }
     }
 
