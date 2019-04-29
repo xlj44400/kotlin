@@ -1,6 +1,5 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.gradle.jvm.tasks.Jar
 
 description = "Kotlin IDEA Ultimate plugin"
 
@@ -10,12 +9,16 @@ plugins {
 
 val ideaProjectResources =  project(":idea").mainSourceSet.output.resourcesDir
 
-evaluationDependsOn(":prepare:idea-plugin")
+val communityPluginProject = ":prepare:idea-plugin"
+val ideaUltimateNativeProject = ":kotlin-ultimate:idea-ultimate-native"
+
+evaluationDependsOn(communityPluginProject)
+evaluationDependsOn(ideaUltimateNativeProject)
 
 val intellijUltimateEnabled : Boolean by rootProject.extra
 
 val springClasspath by configurations.creating
-val clionUnscrambledJarDir: File by rootProject.extra
+//val clionUnscrambledJarDir: File by rootProject.extra
 
 dependencies {
     if (intellijUltimateEnabled) {
@@ -42,8 +45,6 @@ dependencies {
     compile(project(":idea:idea-gradle")) { isTransitive = false }
     compile(project(":compiler:util")) { isTransitive = false }
     compile(project(":idea:idea-jps-common")) { isTransitive = false }
-    compile(project(":kotlin-ultimate:cidr-native")) { isTransitive = true }
-    compileOnly(fileTree(clionUnscrambledJarDir) { include("**/*.jar") })
     compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 
     if (intellijUltimateEnabled) {
@@ -178,20 +179,16 @@ val preparePluginXml by task<Copy> {
     }
 }
 
-val communityPluginProject = ":prepare:idea-plugin"
-
 val jar = runtimeJar(task<ShadowJar>("shadowJar")) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn(preparePluginXml)
     dependsOn("$communityPluginProject:shadowJar")
     val communityPluginJar = project(communityPluginProject).configurations["runtimeJar"].artifacts.files.singleFile
-    val tasksSet = project(":kotlin-ultimate:cidr-native").getTasksByName("jar", false)
-    val jarTask = tasksSet.iterator().next()
-    dependsOn(jarTask)
-    from(jarTask.inputs.files)
+    val ideaUltimateNativeJar = project(ideaUltimateNativeProject).tasks.findByName("jar")?.outputs?.files?.singleFile
     from(zipTree(communityPluginJar), { exclude("META-INF/plugin.xml") })
     from(preparedResources, { include("META-INF/plugin.xml") })
     from(mainSourceSet.output)
+    from(zipTree(ideaUltimateNativeJar!!))
     archiveName = "kotlin-plugin.jar"
 }
 

@@ -209,6 +209,7 @@ if (includeCidr) {
     include ":kotlin-ultimate:cidr-native",
             ":kotlin-ultimate:appcode-native",
             ":kotlin-ultimate:clion-native",
+            ":kotlin-ultimate:idea-ultimate-native",
             ":kotlin-ultimate:prepare:cidr-plugin",
             ":kotlin-ultimate:prepare:appcode-plugin",
             ":kotlin-ultimate:prepare:clion-plugin"
