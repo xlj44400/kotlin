@@ -107,6 +107,17 @@ class StringTest {
         test(CharArray(160_000) { 'k' })
     }
 
+    @Test
+    fun toCharArray() {
+        val s = "hello"
+        assertArrayContentEquals(charArrayOf('h', 'e', 'l', 'l', 'o'), s.toCharArray())
+        assertArrayContentEquals(charArrayOf('e', 'l'), s.toCharArray(1, 3))
+
+        assertFailsWith<IndexOutOfBoundsException> { s.toCharArray(-1) }
+        assertFailsWith<IndexOutOfBoundsException> { s.toCharArray(0, 6) }
+        assertFailsWith<IllegalArgumentException> { s.toCharArray(3, 1) }
+    }
+
     @Test fun isEmptyAndBlank() = withOneCharSequenceArg { arg1 ->
         class Case(val value: String?, val isNull: Boolean = false, val isEmpty: Boolean = false, val isBlank: Boolean = false)
 
@@ -1489,16 +1500,5 @@ ${"    "}
 
         assertFailsWith<IndexOutOfBoundsException> { "".elementAt(0) }
         assertFailsWith<IndexOutOfBoundsException> { "a c".elementAt(-1) }
-    }
-
-    @Test
-    fun toCharArray() {
-        val s = "hello"
-        assertArrayContentEquals(charArrayOf('h', 'e', 'l', 'l', 'o'), s.toCharArray())
-        assertArrayContentEquals(charArrayOf('e', 'l'), s.toCharArray(1, 3))
-
-        assertFailsWith<IndexOutOfBoundsException> { s.toCharArray(-1) }
-        assertFailsWith<IndexOutOfBoundsException> { s.toCharArray(0, 6) }
-        assertFailsWith<IllegalArgumentException> { s.toCharArray(3, 1) }
     }
 }

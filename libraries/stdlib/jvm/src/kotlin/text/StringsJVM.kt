@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
-import java.util.*
+import java.util.Locale
 import java.util.regex.Pattern
 
 
@@ -115,7 +115,7 @@ public actual inline fun String.toLowerCase(): String = (this as java.lang.Strin
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
 public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = this.size): String {
-    kotlin.collections.AbstractList.checkBoundsIndexes(startIndex, endIndex, this.size)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, this.size)
     return String(this, startIndex, endIndex - startIndex)
 }
 
@@ -123,7 +123,7 @@ public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = 
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
 public actual fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.length): CharArray {
-    checkStringBounds(startIndex, endIndex, length)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, length)
     return toCharArray(CharArray(endIndex - startIndex), 0, startIndex, endIndex)
 }
 
@@ -135,7 +135,7 @@ public actual fun ByteArray.decodeToString(
     endIndex: Int = this.size,
     throwOnInvalidSequence: Boolean = false
 ): String {
-    kotlin.collections.AbstractList.checkBoundsIndexes(startIndex, endIndex, this.size)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, this.size)
 
     if (!throwOnInvalidSequence) {
         return String(this, startIndex, endIndex - startIndex)
@@ -156,7 +156,7 @@ public actual fun String.encodeToByteArray(
     endIndex: Int = this.length,
     throwOnInvalidSequence: Boolean = false
 ): ByteArray {
-    checkStringBounds(startIndex, endIndex, length)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, length)
 
     if (!throwOnInvalidSequence) {
         return this.substring(startIndex, endIndex).toByteArray(Charsets.UTF_8)

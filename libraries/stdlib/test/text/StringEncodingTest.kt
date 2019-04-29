@@ -1,12 +1,12 @@
 /*
- * Copyright 2010-2019 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license
- * that can be found in the license/LICENSE.txt file.
+ * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
-package text
+package test.text
 
 import test.assertArrayContentEquals
-import test.executeIfNotOnJvm6And7
+import test.testOnNonJvm6And7
 import test.surrogateCharEncoding
 import test.surrogateCodePointDecoding
 import kotlin.test.*
@@ -38,7 +38,7 @@ class StringEncodingTest {
     }
 
     @Test
-    fun toByteArray() {
+    fun encodeToByteArray() {
         // empty string
         testEncoding(true, bytes(), "")
 
@@ -102,7 +102,7 @@ class StringEncodingTest {
     }
 
     @Test
-    fun toByteArraySlice() {
+    fun encodeToByteArraySlice() {
         assertFailsWith<IllegalArgumentException> { "".encodeToByteArray(startIndex = 1) }
         assertFailsWith<IllegalArgumentException> { "123".encodeToByteArray(startIndex = 10) }
         assertFailsWith<IndexOutOfBoundsException> { "123".encodeToByteArray(startIndex = -1) }
@@ -194,7 +194,7 @@ class StringEncodingTest {
         testDecoding(false, "�z", bytes(0xE0, 0xAF, 0x7A)) // 3-byte char, third byte starts with 0 bit
         testDecoding(true, "\u1FFF", bytes(0xE1, 0xBF, 0xBF)) // 3-byte char
 
-        executeIfNotOnJvm6And7 {
+        testOnNonJvm6And7 {
             testDecoding(false, surrogateCodePointDecoding, bytes(0xED, 0xAF, 0xBF)) // 3-byte high-surrogate char
             testDecoding(false, surrogateCodePointDecoding, bytes(0xED, 0xB3, 0x9A)) // 3-byte low-surrogate char
             testDecoding(
@@ -262,7 +262,7 @@ class StringEncodingTest {
         testDecoding(false, "�z", bytes(0xEF, 0xAF, 0x7A), startIndex = 1, endIndex = 3)
         testDecoding(true, "z", bytes(0xEF, 0xAF, 0x7A), startIndex = 2, endIndex = 3)
 
-        executeIfNotOnJvm6And7 {
+        testOnNonJvm6And7 {
             testDecoding(false, surrogateCodePointDecoding, bytes(0xED, 0xAF, 0xBF), startIndex = 0, endIndex = 3)
             testDecoding(false, truncatedSurrogateDecoding(), bytes(0xED, 0xB3, 0x9A), startIndex = 0, endIndex = 2)
             testDecoding(false, "���", bytes(0xED, 0xAF, 0xBF, 0xED, 0xB3, 0x9A), startIndex = 1, endIndex = 4)

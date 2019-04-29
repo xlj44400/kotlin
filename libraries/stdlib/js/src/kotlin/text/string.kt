@@ -52,7 +52,7 @@ public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = 
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
 public actual fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.length): CharArray {
-    checkStringBounds(startIndex, endIndex, length)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, length)
     return CharArray(endIndex - startIndex) { get(startIndex + it) }
 }
 
@@ -76,7 +76,7 @@ public actual fun String.encodeToByteArray(
     endIndex: Int = this.length,
     throwOnInvalidSequence: Boolean = false
 ): ByteArray {
-    checkStringBounds(startIndex, endIndex, length)
+    AbstractList.checkBoundsIndexes(startIndex, endIndex, length)
     return encodeUtf8(this, startIndex, endIndex, throwOnInvalidSequence)
 }
 
