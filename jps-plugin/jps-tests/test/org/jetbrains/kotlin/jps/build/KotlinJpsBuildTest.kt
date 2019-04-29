@@ -20,6 +20,7 @@ import com.google.common.collect.Lists
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.io.FileUtil.toSystemIndependentName
 import com.intellij.openapi.util.io.FileUtilRt
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.testFramework.LightVirtualFile
@@ -705,6 +706,28 @@ open class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
         initProject(JVM_MOCK_RUNTIME)
         val result = buildAllModules()
         result.assertSuccessful()
+    }
+
+    fun testKotlinProjectWithEnabledNewInferenceInIDE() {
+        val oldValue = Registry.`is`("kotlin.use.new.inference.in.ide", false)
+        try {
+            Registry.get("kotlin.use.new.inference.in.ide").setValue(true)
+            doTest()
+        } finally {
+            Registry.get("kotlin.use.new.inference.in.ide").setValue(oldValue)
+        }
+    }
+
+    fun testKotlinProjectWithErrorsBecauseOfNewInference() {
+        initProject(JVM_MOCK_RUNTIME)
+        val module = myProject.modules.single()
+        val args = module.kotlinCompilerArguments
+        args.newInference = true
+        myProject.kotlinCommonCompilerArguments = args
+
+        val result = buildAllModules()
+        result.assertFailed()
+        result.checkErrors()
     }
 
     private fun createKotlinJavaScriptLibraryArchive() {

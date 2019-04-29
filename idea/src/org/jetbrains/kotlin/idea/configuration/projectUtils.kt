@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.idea.configuration
 
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.psi.search.FileTypeIndex
 import org.jetbrains.kotlin.idea.KotlinFileType
 
@@ -15,4 +16,12 @@ fun hasKotlinFilesOnlyInTests(module: Module): Boolean {
 
 fun hasKotlinFilesInSources(module: Module): Boolean {
     return FileTypeIndex.containsFileOfType(KotlinFileType.INSTANCE, module.getModuleScope(false))
+}
+
+fun isNewInferenceEnabledInIDE(): Boolean {
+    return Registry.`is`("kotlin.use.new.inference.in.ide", false)
+}
+
+fun setNewInferenceInIDE(enabled: Boolean) {
+    Registry.get("kotlin.use.new.inference.in.ide").setValue(enabled)
 }
