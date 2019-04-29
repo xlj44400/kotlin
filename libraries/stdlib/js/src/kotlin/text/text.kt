@@ -80,6 +80,9 @@ public actual class StringBuilder(content: String = "") : Appendable, CharSequen
 public actual inline fun StringBuilder.clear(): StringBuilder = this.clear()
 
 
+/**
+ *  The exception thrown when a character encoding or decoding error occurs.
+ */
 @SinceKotlin("1.3")
 @ExperimentalStdlibApi
 public actual open class CharacterCodingException(message: String?) : Exception(message) {

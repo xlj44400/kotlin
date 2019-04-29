@@ -111,6 +111,15 @@ public actual inline fun String.toUpperCase(): String = (this as java.lang.Strin
 @kotlin.internal.InlineOnly
 public actual inline fun String.toLowerCase(): String = (this as java.lang.String).toLowerCase()
 
+/**
+ * Concatenates characters in this [CharArray] or its subrange into a String.
+ *
+ * @param startIndex the beginning (inclusive) of the subrange of characters, 0 by default.
+ * @param endIndex the end (exclusive) of the subrange of characters, size of this array by default.
+ *
+ * @throws IndexOutOfBoundsException if [startIndex] is less than zero or [endIndex] is greater than size of this array.
+ * @throws IllegalArgumentException if [startIndex] is greater than [endIndex].
+ */
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
@@ -119,6 +128,15 @@ public actual fun CharArray.concatToString(startIndex: Int = 0, endIndex: Int = 
     return String(this, startIndex, endIndex - startIndex)
 }
 
+/**
+ * Returns a [CharArray] containing characters of this string or its substring.
+ *
+ * @param startIndex the beginning (inclusive) of the substring, 0 by default.
+ * @param endIndex the end (exclusive) of the substring, length of this string by default.
+ *
+ * @throws IndexOutOfBoundsException if [startIndex] is less than zero or [endIndex] is greater than length of this string.
+ * @throws IllegalArgumentException if [startIndex] is greater than [endIndex].
+ */
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
@@ -127,6 +145,17 @@ public actual fun String.toCharArray(startIndex: Int = 0, endIndex: Int = this.l
     return toCharArray(CharArray(endIndex - startIndex), 0, startIndex, endIndex)
 }
 
+/**
+ * Decodes a string from the bytes in UTF-8 encoding in this array or its subrange.
+ *
+ * @param startIndex the beginning (inclusive) of the subrange to decode, 0 by default.
+ * @param endIndex the end (exclusive) of the subrange to decode, size of this array by default.
+ * @param throwOnInvalidSequence specifies whether to throw an exception on malformed byte sequence or replace it by the replacement char `\uFFFD`.
+ *
+ * @throws IndexOutOfBoundsException if [startIndex] is less than zero or [endIndex] is greater than size of this array.
+ * @throws IllegalArgumentException if [startIndex] is greater than [endIndex].
+ * @throws CharacterCodingException if the byte array contains malformed UTF-8 byte sequence and [throwOnInvalidSequence] is true.
+ */
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
@@ -148,6 +177,17 @@ public actual fun ByteArray.decodeToString(
     return decoder.decode(ByteBuffer.wrap(this, startIndex, endIndex - startIndex)).toString()
 }
 
+/**
+ * Encodes this string or its substring to an array of bytes in UTF-8 encoding.
+ *
+ * @param startIndex the beginning (inclusive) of the substring to encode, 0 by default.
+ * @param endIndex the end (exclusive) of the substring to encode, length of this string by default.
+ * @param throwOnInvalidSequence specifies whether to throw an exception on malformed char sequence or replace.
+ *
+ * @throws IndexOutOfBoundsException if [startIndex] is less than zero or [endIndex] is greater than length of this string.
+ * @throws IllegalArgumentException if [startIndex] is greater than [endIndex].
+ * @throws CharacterCodingException if this string contains malformed char sequence and [throwOnInvalidSequence] is true.
+ */
 @SinceKotlin("1.3")
 @Suppress("ACTUAL_FUNCTION_WITH_DEFAULT_ARGUMENTS")
 @ExperimentalStdlibApi
