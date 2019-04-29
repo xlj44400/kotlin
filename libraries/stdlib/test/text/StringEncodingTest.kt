@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -7,9 +7,17 @@ package test.text
 
 import test.assertArrayContentEquals
 import test.testOnNonJvm6And7
-import test.surrogateCharEncoding
-import test.surrogateCodePointDecoding
 import kotlin.test.*
+
+// When decoding utf-8, JVM and JS implementations replace the sequence reflecting a surrogate code point differently.
+// JS replaces each byte of the sequence by the replacement char, whereas JVM replaces the whole sequence with a single replacement char.
+// See corresponding actual to find out the replacement.
+internal expect val surrogateCodePointDecoding: String
+
+// The byte sequence used to replace a surrogate char.
+// JVM default replacement sequence consist of single 0x3F byte.
+// JS and Native replacement byte sequence is [0xEF, 0xBF, 0xBD].
+internal expect val surrogateCharEncoding: ByteArray
 
 class StringEncodingTest {
     private fun bytes(vararg elements: Int) = ByteArray(elements.size) { elements[it].toByte() }

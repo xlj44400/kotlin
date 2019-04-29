@@ -17,7 +17,3 @@ internal actual inline fun String.removeLeadingPlusOnJava6(): String = this
 internal actual inline fun testOnNonJvm6And7(f: () -> Unit) {
     f()
 }
-
-internal actual val surrogateCodePointDecoding: String = "���"
-
-internal actual val surrogateCharEncoding: ByteArray = byteArrayOf(0xEF.toByte(), 0xBF.toByte(), 0xBD.toByte())

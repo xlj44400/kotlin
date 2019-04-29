@@ -25,7 +25,3 @@ internal actual inline fun testOnNonJvm6And7(f: () -> Unit) {
         f()
     }
 }
-
-internal actual val surrogateCodePointDecoding: String = "�"
-
-internal actual val surrogateCharEncoding: ByteArray = byteArrayOf(0x3F)
