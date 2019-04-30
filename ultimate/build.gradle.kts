@@ -183,8 +183,9 @@ val jar = runtimeJar(task<ShadowJar>("shadowJar")) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn(preparePluginXml)
     dependsOn("$communityPluginProject:shadowJar")
+    dependsOn("$ideaUltimateNativeProject:shadowJar")
     val communityPluginJar = project(communityPluginProject).configurations["runtimeJar"].artifacts.files.singleFile
-    val ideaUltimateNativeJar = project(ideaUltimateNativeProject).tasks.findByName("jar")?.outputs?.files?.singleFile
+    val ideaUltimateNativeJar = project(ideaUltimateNativeProject).tasks.findByName("shadowJar")?.outputs?.files?.singleFile
     from(zipTree(communityPluginJar), { exclude("META-INF/plugin.xml") })
     from(preparedResources, { include("META-INF/plugin.xml") })
     from(mainSourceSet.output)
