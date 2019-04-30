@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.config.LanguageFeature.Kind.*
 import org.jetbrains.kotlin.config.LanguageVersion.*
 import org.jetbrains.kotlin.utils.DescriptionAware
 import java.util.*
+import kotlin.reflect.KProperty
 
 enum class LanguageFeature(
     val sinceVersion: LanguageVersion?,

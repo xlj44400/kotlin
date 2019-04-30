@@ -440,6 +440,7 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
     @Override
     public boolean isModified() {
         return isModified(reportWarningsCheckBox, !commonCompilerArguments.getSuppressWarnings()) ||
+               isModified(enableNewInferenceInIDECheckBox, commonCompilerArguments.getEnableNewInferenceInIDE()) ||
                !getSelectedLanguageVersionView().equals(KotlinFacetSettingsKt.getLanguageVersionView(commonCompilerArguments)) ||
                !getSelectedAPIVersionView().equals(KotlinFacetSettingsKt.getApiVersionView(commonCompilerArguments)) ||
                !getSelectedCoroutineState().equals(commonCompilerArguments.getCoroutinesState()) ||
@@ -517,7 +518,8 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
                     !getSelectedLanguageVersionView().equals(KotlinFacetSettingsKt.getLanguageVersionView(commonCompilerArguments)) ||
                     !getSelectedAPIVersionView().equals(KotlinFacetSettingsKt.getApiVersionView(commonCompilerArguments)) ||
                     !getSelectedCoroutineState().equals(commonCompilerArguments.getCoroutinesState()) ||
-                    !additionalArgsOptionsField.getText().equals(compilerSettings.getAdditionalArguments());
+                    !additionalArgsOptionsField.getText().equals(compilerSettings.getAdditionalArguments()) ||
+                    enableNewInferenceInIDECheckBox.isEnabled() != commonCompilerArguments.getEnableNewInferenceInIDE();
 
             if (shouldInvalidateCaches) {
                 ApplicationUtilsKt.runWriteAction(
@@ -533,6 +535,7 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
         }
 
         commonCompilerArguments.setSuppressWarnings(!reportWarningsCheckBox.isSelected());
+        commonCompilerArguments.setEnableNewInferenceInIDE(enableNewInferenceInIDECheckBox.isSelected());
         KotlinFacetSettingsKt.setLanguageVersionView(commonCompilerArguments, getSelectedLanguageVersionView());
         KotlinFacetSettingsKt.setApiVersionView(commonCompilerArguments, getSelectedAPIVersionView());
 
@@ -585,6 +588,7 @@ public class KotlinCompilerConfigurableTab implements SearchableConfigurable, Co
     @Override
     public void reset() {
         reportWarningsCheckBox.setSelected(!commonCompilerArguments.getSuppressWarnings());
+        enableNewInferenceInIDECheckBox.setSelected(commonCompilerArguments.getEnableNewInferenceInIDE());
         languageVersionComboBox.setSelectedItem(KotlinFacetSettingsKt.getLanguageVersionView(commonCompilerArguments));
         onLanguageLevelChanged(getSelectedLanguageVersionView());
         apiVersionComboBox.setSelectedItem(KotlinFacetSettingsKt.getApiVersionView(commonCompilerArguments));

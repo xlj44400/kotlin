@@ -274,6 +274,12 @@ abstract class CommonCompilerArguments : CommonToolArguments() {
     )
     var checkStickyPhaseConditions: Boolean by FreezableVar(false)
 
+    @Argument(
+        value = "-Xenable-new-inference-in-ide",
+        description = "Enables new inference in IDE only"
+    )
+    var enableNewInferenceInIDE: Boolean by FreezableVar(false)
+
     open fun configureAnalysisFlags(collector: MessageCollector): MutableMap<AnalysisFlag<*>, Any> {
         return HashMap<AnalysisFlag<*>, Any>().apply {
             put(AnalysisFlags.skipMetadataVersionCheck, skipMetadataVersionCheck)

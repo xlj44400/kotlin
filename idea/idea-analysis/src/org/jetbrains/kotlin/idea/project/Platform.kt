@@ -194,6 +194,7 @@ private fun Module.computeLanguageVersionSettings(): LanguageVersionSettings {
     val languageFeatures = facetSettings.mergedCompilerArguments?.configureLanguageFeatures(MessageCollector.NONE)?.apply {
         configureCoroutinesSupport(facetSettings.coroutineSupport, languageVersion)
         configureMultiplatformSupport(facetSettings.platform?.kind, this@computeLanguageVersionSettings)
+        configureNewInferenceSupport(facetSettings.compilerArguments?.enableNewInferenceInIDE == true)
     }.orEmpty()
 
     val analysisFlags = facetSettings.mergedCompilerArguments?.configureAnalysisFlags(MessageCollector.NONE).orEmpty()
@@ -248,6 +249,13 @@ fun MutableMap<LanguageFeature, LanguageFeature.State>.configureMultiplatformSup
     }
 }
 
+fun MutableMap<LanguageFeature, LanguageFeature.State>.configureNewInferenceSupport(
+    enableNewInferenceInIDE: Boolean
+) {
+    if (enableNewInferenceInIDE) {
+//        put(LanguageFeature.NewInference, LanguageFeature.State.ENABLED)
+    }
+}
 
 val PsiElement.languageVersionSettings: LanguageVersionSettings
     get() {
