@@ -10,9 +10,11 @@ plugins {
 val ideaProjectResources =  project(":idea").mainSourceSet.output.resourcesDir
 
 val communityPluginProject = ":prepare:idea-plugin"
+val cidrNativeProject = ":kotlin-ultimate:cidr-native"
 val ideaUltimateNativeProject = ":kotlin-ultimate:idea-ultimate-native"
 
 evaluationDependsOn(communityPluginProject)
+evaluationDependsOn(cidrNativeProject)
 evaluationDependsOn(ideaUltimateNativeProject)
 
 val intellijUltimateEnabled : Boolean by rootProject.extra
@@ -183,13 +185,16 @@ val jar = runtimeJar(task<ShadowJar>("shadowJar")) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     dependsOn(preparePluginXml)
     dependsOn("$communityPluginProject:shadowJar")
-    dependsOn("$ideaUltimateNativeProject:shadowJar")
+    dependsOn("$ideaUltimateNativeProject:jar")
+    dependsOn("$cidrNativeProject:jar")
     val communityPluginJar = project(communityPluginProject).configurations["runtimeJar"].artifacts.files.singleFile
-    val ideaUltimateNativeJar = project(ideaUltimateNativeProject).tasks.findByName("shadowJar")?.outputs?.files?.singleFile
+    val ideaUltimateNativeJar = project(ideaUltimateNativeProject).tasks.findByName("jar")?.outputs?.files?.singleFile
+    val cidrNativeJar = project(cidrNativeProject).tasks.findByName("jar")?.outputs?.files?.singleFile
+    from(zipTree(ideaUltimateNativeJar!!))
+    from(zipTree(cidrNativeJar!!))
     from(zipTree(communityPluginJar), { exclude("META-INF/plugin.xml") })
     from(preparedResources, { include("META-INF/plugin.xml") })
     from(mainSourceSet.output)
-    from(zipTree(ideaUltimateNativeJar!!))
     archiveName = "kotlin-plugin.jar"
 }
 
