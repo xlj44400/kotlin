@@ -37,11 +37,7 @@ class UnusedLambdaExpressionBodyInspection : AbstractKotlinInspection() {
 
             val resolvedCall = expression.getResolvedCall(context) ?: return
             val descriptor = resolvedCall.resultingDescriptor.let {
-                if (resolvedCall is NewResolvedCallImpl || resolvedCall is NewVariableAsFunctionResolvedCallImpl) {
-                    it.original
-                } else {
-                    it
-                }
+                if (resolvedCall is NewResolvedCallImpl || resolvedCall is NewVariableAsFunctionResolvedCallImpl) it.original else it
             }
             if (!descriptor.returnsFunction()) {
                 return
