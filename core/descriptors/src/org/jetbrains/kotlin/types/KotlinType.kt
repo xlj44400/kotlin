@@ -179,8 +179,8 @@ val KotlinType.isError: Boolean
                 (unwrapped is FlexibleType && unwrapped.delegate is ErrorType)
     }
 
-fun DeclarationDescriptor.refineDescriptor(moduleDescriptor: ModuleDescriptor): ClassDescriptor? {
+fun DeclarationDescriptor.refineDescriptor(moduleDescriptor: ModuleDescriptor): ClassifierDescriptor? {
     if (this !is ClassifierDescriptorWithTypeParameters) return null
     val classId = this.classId ?: return null
-    return moduleDescriptor.findClassifierAcrossModuleDependencies(classId) as? ClassDescriptor
+    return moduleDescriptor.findClassifierAcrossModuleDependencies(classId)
 }

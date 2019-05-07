@@ -62,11 +62,11 @@ class IntersectionTypeConstructor(typesToIntersect: Collection<KotlinType>) : Ty
         return intersectedTypes == other.intersectedTypes
     }
 
-    fun createType() =
+    fun createType(): SimpleType =
         KotlinTypeFactory.simpleTypeWithNonTrivialMemberScope(
             Annotations.EMPTY, this, listOf(), false, this.createScopeForKotlinType()
         ) { moduleDescriptor: ModuleDescriptor ->
-            this.refine(moduleDescriptor).createScopeForKotlinType()
+            this.refine(moduleDescriptor).createType()
         }
 
     override fun hashCode(): Int = hashCode

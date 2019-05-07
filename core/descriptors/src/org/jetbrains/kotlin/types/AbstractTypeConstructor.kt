@@ -17,8 +17,10 @@
 package org.jetbrains.kotlin.types
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.SupertypeLoopChecker
+import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.storage.StorageManager
 
 abstract class AbstractTypeConstructor(private val storageManager: StorageManager) : TypeConstructor {
@@ -26,18 +28,7 @@ abstract class AbstractTypeConstructor(private val storageManager: StorageManage
 
     abstract override fun getDeclarationDescriptor(): ClassifierDescriptor
 
-    override fun refine(moduleDescriptor: ModuleDescriptor): TypeConstructor? {
-        val sameDescriptorModelView = ModuleViewTypeConstructor(moduleDescriptor)
-
-        val classId = declarationDescriptor.classId ?: return sameDescriptorModelView
-        val classifierDescriptor =
-            moduleDescriptor.findClassifierAcrossModuleDependencies(classId)
-                ?: return sameDescriptorModelView
-
-        if (classifierDescriptor === declarationDescriptor) return sameDescriptorModelView
-
-        return classifierDescriptor.typeConstructor.refine(moduleDescriptor)
-    }
+    override fun refine(moduleDescriptor: ModuleDescriptor): TypeConstructor = ModuleViewTypeConstructor(moduleDescriptor)
 
     private inner class ModuleViewTypeConstructor(
         private val moduleDescriptor: ModuleDescriptor

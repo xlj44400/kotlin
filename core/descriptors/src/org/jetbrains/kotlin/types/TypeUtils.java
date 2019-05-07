@@ -190,19 +190,28 @@ public class TypeUtils {
     @NotNull
     public static SimpleType makeUnsubstitutedType(
             ClassifierDescriptor classifierDescriptor, MemberScope unsubstitutedMemberScope,
-            Function1<ModuleDescriptor, MemberScope> scopeFactory
+            Function1<ModuleDescriptor, SimpleType> refinedTypeFactory
     ) {
         if (ErrorUtils.isError(classifierDescriptor)) {
             return ErrorUtils.createErrorType("Unsubstituted type for " + classifierDescriptor);
         }
         TypeConstructor typeConstructor = classifierDescriptor.getTypeConstructor();
+        return makeUnsubstitutedType(typeConstructor, unsubstitutedMemberScope, refinedTypeFactory);
+    }
+
+    @NotNull
+    public static SimpleType makeUnsubstitutedType(
+            @NotNull TypeConstructor typeConstructor,
+            @NotNull MemberScope unsubstitutedMemberScope,
+            @NotNull Function1<ModuleDescriptor, SimpleType> refinedTypeFactory
+    ) {
         List<TypeProjection> arguments = getDefaultTypeProjections(typeConstructor.getParameters());
         return KotlinTypeFactory.simpleTypeWithNonTrivialMemberScope(
                 Annotations.Companion.getEMPTY(),
                 typeConstructor,
                 arguments,
                 false,
-                unsubstitutedMemberScope, scopeFactory
+                unsubstitutedMemberScope, refinedTypeFactory
         );
     }
 

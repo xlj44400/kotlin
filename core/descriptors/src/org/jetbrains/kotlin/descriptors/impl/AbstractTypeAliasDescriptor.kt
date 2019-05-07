@@ -96,8 +96,7 @@ abstract class AbstractTypeAliasDescriptor(
             classDescriptor
                 ?.refineDescriptor(moduleDescriptor)
                 ?.safeAs<ClassDescriptor>()
-                ?.unsubstitutedMemberScope
-                ?: MemberScope.Empty
+                ?.defaultType
         }
 
     private val typeConstructor = object : TypeConstructor {

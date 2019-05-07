@@ -19,10 +19,7 @@ package org.jetbrains.kotlin.descriptors.impl;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.descriptors.ClassDescriptor;
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptorVisitor;
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor;
-import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor;
+import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.resolve.DescriptorUtils;
 import org.jetbrains.kotlin.resolve.scopes.InnerClassesScopeWrapper;
@@ -47,17 +44,30 @@ public abstract class AbstractClassDescriptor extends ModuleAwareClassDescriptor
             public SimpleType invoke() {
                 return TypeUtils.makeUnsubstitutedType(
                         AbstractClassDescriptor.this, getUnsubstitutedMemberScope(),
-                        new Function1<ModuleDescriptor, MemberScope>() {
+                        new Function1<ModuleDescriptor, SimpleType>() {
                             @Override
-                            public MemberScope invoke(ModuleDescriptor moduleDescriptor) {
-                                ClassDescriptor descriptor = KotlinTypeKt.refineDescriptor(AbstractClassDescriptor.this, moduleDescriptor);
-                                if (descriptor == null) return getUnsubstitutedMemberScope(moduleDescriptor);
+                            public SimpleType invoke(ModuleDescriptor moduleDescriptor) {
+                                ClassifierDescriptor descriptor =
+                                        KotlinTypeKt.refineDescriptor(AbstractClassDescriptor.this, moduleDescriptor);
+                                if (descriptor == null) return defaultType.invoke();
 
-                                if (descriptor instanceof ModuleAwareClassDescriptor) {
-                                    return ((ModuleAwareClassDescriptor) descriptor).getUnsubstitutedMemberScope(moduleDescriptor);
+                                if (descriptor instanceof TypeAliasDescriptor) {
+                                    return KotlinTypeFactory.computeExpandedType(
+                                            (TypeAliasDescriptor) descriptor,
+                                            TypeUtils.getDefaultTypeProjections(descriptor.getTypeConstructor().getParameters())
+                                    );
                                 }
 
-                                return descriptor.getUnsubstitutedMemberScope();
+                                if (descriptor instanceof ModuleAwareClassDescriptor) {
+                                    TypeConstructor refinedConstructor = descriptor.getTypeConstructor().refine(moduleDescriptor);
+                                    return TypeUtils.makeUnsubstitutedType(
+                                            refinedConstructor == null ? descriptor.getTypeConstructor() : refinedConstructor,
+                                            ((ModuleAwareClassDescriptor) descriptor).getUnsubstitutedMemberScope(moduleDescriptor),
+                                            this
+                                    );
+                                }
+
+                                return descriptor.getDefaultType();
                             }
                         }
                 );
