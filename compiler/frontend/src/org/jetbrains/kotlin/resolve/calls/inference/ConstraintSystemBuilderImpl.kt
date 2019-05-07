@@ -18,7 +18,6 @@ package org.jetbrains.kotlin.resolve.calls.inference
 
 import org.jetbrains.kotlin.builtins.createFunctionType
 import org.jetbrains.kotlin.builtins.isBuiltinExtensionFunctionalType
-import org.jetbrains.kotlin.builtins.isExtensionFunctionType
 import org.jetbrains.kotlin.builtins.isSuspendFunctionType
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
@@ -34,10 +33,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.hasExactAnnotation
 import org.jetbrains.kotlin.resolve.descriptorUtil.hasNoInferAnnotation
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.TypeUtils.DONT_CARE
-import org.jetbrains.kotlin.types.checker.SimpleClassicTypeSystemContext
-import org.jetbrains.kotlin.types.checker.TypeCheckingProcedure
-import org.jetbrains.kotlin.types.checker.TypeCheckingProcedureCallbacks
-import org.jetbrains.kotlin.types.checker.requireOrDescribe
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.KotlinTypeMarker
 import org.jetbrains.kotlin.types.model.TypeParameterMarker
 import org.jetbrains.kotlin.types.model.TypeSystemInferenceExtensionContext
@@ -45,11 +41,12 @@ import org.jetbrains.kotlin.types.typeUtil.builtIns
 import org.jetbrains.kotlin.types.typeUtil.defaultProjections
 import org.jetbrains.kotlin.types.typeUtil.isDefaultBound
 import org.jetbrains.kotlin.utils.addToStdlib.cast
-import java.lang.IllegalArgumentException
-import java.lang.IllegalStateException
 import java.util.*
 
-open class ConstraintSystemBuilderImpl(private val mode: Mode = ConstraintSystemBuilderImpl.Mode.INFERENCE) : ConstraintSystem.Builder {
+open class ConstraintSystemBuilderImpl(
+    private val mode: Mode = ConstraintSystemBuilderImpl.Mode.INFERENCE,
+    private val refineKotlinTypeChecker: RefineKotlinTypeChecker = RefineKotlinTypeChecker.Default
+) : ConstraintSystem.Builder {
     enum class Mode {
         INFERENCE,
         SPECIFICITY
@@ -274,7 +271,7 @@ open class ConstraintSystemBuilderImpl(private val mode: Mode = ConstraintSystem
         constraintContext: ConstraintContext
     ) {
         val bound = Bound(
-            typeVariable, constrainingType, kind, constraintContext.position,
+            typeVariable, refineKotlinTypeChecker.refineType(constrainingType), kind, constraintContext.position,
             constrainingType.isProper(), constraintContext.derivedFrom ?: emptySet()
         )
         val typeBounds = getTypeBounds(typeVariable)
@@ -427,7 +424,9 @@ open class ConstraintSystemBuilderImpl(private val mode: Mode = ConstraintSystem
     }
 
     override fun build(): ConstraintSystem {
-        return ConstraintSystemImpl(allTypeParameterBounds, usedInBounds, errors, initialConstraints, typeVariableSubstitutors)
+        return ConstraintSystemImpl(
+            allTypeParameterBounds, usedInBounds, errors, initialConstraints, typeVariableSubstitutors, refineKotlinTypeChecker
+        )
     }
 
     companion object {

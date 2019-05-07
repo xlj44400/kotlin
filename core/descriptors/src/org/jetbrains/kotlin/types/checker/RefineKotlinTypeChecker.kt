@@ -9,4 +9,12 @@ import org.jetbrains.kotlin.types.KotlinType
 
 interface RefineKotlinTypeChecker {
     fun isSubtypeOf(subtype: KotlinType, supertype: KotlinType): Boolean
+    fun equalTypes(subtype: KotlinType, supertype: KotlinType): Boolean
+    fun refineType(type: KotlinType): KotlinType
+
+    object Default : RefineKotlinTypeChecker {
+        override fun isSubtypeOf(subtype: KotlinType, supertype: KotlinType) = KotlinTypeChecker.DEFAULT.isSubtypeOf(subtype, supertype)
+        override fun equalTypes(subtype: KotlinType, supertype: KotlinType) = KotlinTypeChecker.DEFAULT.equalTypes(subtype, supertype)
+        override fun refineType(type: KotlinType): KotlinType = type
+    }
 }

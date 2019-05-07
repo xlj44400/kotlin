@@ -35,4 +35,12 @@ class RefineKotlinTypeCheckerImpl(
 
         return NewKotlinTypeChecker.isSubtypeOf(subtype.refine(moduleDescriptor), supertype)
     }
+
+    override fun equalTypes(subtype: KotlinType, supertype: KotlinType): Boolean {
+        if (!languageVersionSettings.getFlag(AnalysisFlags.useTypeRefinement)) return NewKotlinTypeChecker.equalTypes(subtype, supertype)
+
+        return NewKotlinTypeChecker.equalTypes(subtype.refine(moduleDescriptor), supertype.refine(moduleDescriptor))
+    }
+
+    override fun refineType(type: KotlinType): KotlinType = type.refineTypeIfNeeded(moduleDescriptor, languageVersionSettings)
 }
