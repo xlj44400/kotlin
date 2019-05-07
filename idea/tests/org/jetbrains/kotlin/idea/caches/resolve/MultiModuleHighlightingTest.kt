@@ -206,6 +206,7 @@ open class MultiModuleHighlightingTest : AbstractMultiModuleHighlightingTest() {
         d4.addDependency(d0)
         d4.addDependency(d2)
         d4.addDependency(d3)
+        d4.addDependency(d1)
 
         checkHighlightingInProject()
     }
