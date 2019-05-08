@@ -69,6 +69,7 @@ class LazyJavaClassMemberScope(
     override val ownerDescriptor: ClassDescriptor,
     private val jClass: JavaClass,
     private val moduleDescriptor: ModuleDescriptor,
+    private val skipRefinement: Boolean,
     mainScope: LazyJavaClassMemberScope? = null
 ) : LazyJavaScope(c, mainScope) {
 
@@ -431,7 +432,7 @@ class LazyJavaClassMemberScope(
     }
 
     private fun getFunctionsFromSupertypes(name: Name): Set<SimpleFunctionDescriptor> {
-        return ownerDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.components.settings.useRefinedTypes)
+        return computeSupertypes()
             .flatMapTo(LinkedHashSet()) {
                 it.memberScope.getContributedFunctions(name, NoLookupLocation.WHEN_GET_SUPER_MEMBERS)
             }
@@ -548,9 +549,15 @@ class LazyJavaClassMemberScope(
     }
 
     private fun getPropertiesFromSupertypes(name: Name): Set<PropertyDescriptor> {
-        return ownerDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.components.settings.useRefinedTypes).flatMap {
+        return computeSupertypes().flatMap {
             it.memberScope.getContributedVariables(name, NoLookupLocation.WHEN_GET_SUPER_MEMBERS).map { p -> p }
         }.toSet()
+    }
+
+    private fun computeSupertypes(): Collection<KotlinType> {
+        return ownerDescriptor.refinedSupertypesIfNeeded(
+            moduleDescriptor, !skipRefinement && c.components.settings.useRefinedTypes
+        )
     }
 
     override fun resolveMethodSignature(

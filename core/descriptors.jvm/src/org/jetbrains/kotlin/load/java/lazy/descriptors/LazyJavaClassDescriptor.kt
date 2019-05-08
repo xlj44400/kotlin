@@ -101,10 +101,15 @@ class LazyJavaClassDescriptor(
     private val typeConstructor = LazyJavaClassTypeConstructor()
     override fun getTypeConstructor(): TypeConstructor = typeConstructor
 
-    private val unsubstitutedMemberScope = LazyJavaClassMemberScope(c, this, jClass, module)
+    private val unsubstitutedMemberScope =
+        LazyJavaClassMemberScope(c, this, jClass, module, skipRefinement = additionalSupertypeClassDescriptor != null)
 
     private val scopeHolder = ScopesHolderForClass.create(this, c.storageManager) { moduleDescriptor ->
-        LazyJavaClassMemberScope(c, this, jClass, moduleDescriptor, mainScope = unsubstitutedMemberScope)
+        LazyJavaClassMemberScope(
+            c, this, jClass, moduleDescriptor,
+            skipRefinement = additionalSupertypeClassDescriptor != null,
+            mainScope = unsubstitutedMemberScope
+        )
     }
 
     override fun getUnsubstitutedMemberScope(moduleDescriptor: ModuleDescriptor) = scopeHolder.getScope(moduleDescriptor)
