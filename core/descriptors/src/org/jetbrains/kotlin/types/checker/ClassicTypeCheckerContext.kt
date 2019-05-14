@@ -23,10 +23,14 @@ import org.jetbrains.kotlin.types.model.KotlinTypeMarker
 import org.jetbrains.kotlin.types.model.SimpleTypeMarker
 import org.jetbrains.kotlin.types.model.TypeConstructorMarker
 
-open class ClassicTypeCheckerContext(val errorTypeEqualsToAnything: Boolean, val allowedTypeVariable: Boolean = true) : ClassicTypeSystemContext, AbstractTypeCheckerContext() {
+open class ClassicTypeCheckerContext(
+    private val errorTypeEqualsToAnything: Boolean,
+    private val allowedTypeVariable: Boolean = true,
+    private val refineKotlinTypeChecker: RefineKotlinTypeChecker = RefineKotlinTypeChecker.Default
+) : ClassicTypeSystemContext, AbstractTypeCheckerContext() {
 
     override fun prepareType(type: KotlinTypeMarker): KotlinTypeMarker {
-        return transformToNewType((type as KotlinType).unwrap())
+        return transformToNewType(refineKotlinTypeChecker.refineType((type as KotlinType).unwrap()) as UnwrappedType)
     }
 
     override val isErrorTypeEqualsToAnything: Boolean

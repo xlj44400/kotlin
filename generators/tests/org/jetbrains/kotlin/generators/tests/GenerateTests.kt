@@ -661,6 +661,10 @@ fun main(args: Array<String>) {
             model("multiModuleHighlighting/multiplatform/", recursive = false, extension = null)
         }
 
+        testClass<AbstractMultiPlatformOldInferenceHighlightingTest> {
+            model("multiModuleHighlighting/multiplatform/", recursive = false, extension = null)
+        }
+
         testClass<AbstractHierarchicalExpectActualTest> {
             model("multiModuleHighlighting/hierarchicalExpectActualMatching/", recursive = false, extension = null)
         }

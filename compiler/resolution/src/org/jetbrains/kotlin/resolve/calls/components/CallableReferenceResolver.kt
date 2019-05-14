@@ -16,12 +16,10 @@
 
 package org.jetbrains.kotlin.resolve.calls.components
 
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.resolve.calls.context.CheckArgumentTypesMode
 import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemBuilder
 import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemOperation
-import org.jetbrains.kotlin.resolve.calls.inference.components.ConstraintInjector
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
 import org.jetbrains.kotlin.resolve.calls.inference.components.SimpleConstraintSystemImpl
 import org.jetbrains.kotlin.resolve.calls.model.*
@@ -34,20 +32,18 @@ import org.jetbrains.kotlin.types.UnwrappedType
 
 
 class CallableReferenceOverloadConflictResolver(
-    builtIns: KotlinBuiltIns,
     module: ModuleDescriptor,
     specificityComparator: TypeSpecificityComparator,
-    statelessCallbacks: KotlinResolutionStatelessCallbacks,
-    constraintInjector: ConstraintInjector
+    callComponents: KotlinCallComponents
 ) : OverloadingConflictResolver<CallableReferenceCandidate>(
-    builtIns,
+    callComponents.builtIns,
     module,
     specificityComparator,
     { it.candidate },
-    { SimpleConstraintSystemImpl(constraintInjector, builtIns) },
+    { SimpleConstraintSystemImpl(callComponents) },
     Companion::createFlatSignature,
     { null },
-    { statelessCallbacks.isDescriptorFromSource(it) },
+    { callComponents.statelessCallbacks.isDescriptorFromSource(it) },
     null
 ) {
     companion object {

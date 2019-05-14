@@ -12,12 +12,9 @@ import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.inference.NewConstraintSystem
 import org.jetbrains.kotlin.resolve.calls.inference.components.KotlinConstraintSystemCompleter
 import org.jetbrains.kotlin.resolve.calls.inference.model.ConstraintStorage
-import org.jetbrains.kotlin.resolve.calls.inference.model.NewConstraintSystemImpl
-import org.jetbrains.kotlin.resolve.calls.inference.model.NewTypeVariable
 import org.jetbrains.kotlin.resolve.calls.model.*
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResults
 import org.jetbrains.kotlin.resolve.calls.tasks.TracingStrategy
-import org.jetbrains.kotlin.types.TypeConstructor
 
 abstract class ManyCandidatesResolver<D : CallableDescriptor>(
     private val psiCallResolver: PSICallResolver,
@@ -67,7 +64,7 @@ abstract class ManyCandidatesResolver<D : CallableDescriptor>(
     fun resolveCandidates(resolutionCallbacks: KotlinResolutionCallbacks): List<ResolutionResultCallInfo<D>> {
         val resolvedCallsInfo = partiallyResolvedCallsInfo.toList()
 
-        val commonSystem = NewConstraintSystemImpl(callComponents.constraintInjector, builtIns).apply {
+        val commonSystem = NewConstraintSystemImpl(callComponents).apply {
             addOtherSystem(currentConstraintSystem())
         }
 

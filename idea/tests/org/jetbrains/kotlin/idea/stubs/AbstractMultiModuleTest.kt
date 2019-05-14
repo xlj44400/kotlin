@@ -41,6 +41,8 @@ abstract class AbstractMultiModuleTest : DaemonAnalyzerTestCase() {
 
     abstract override fun getTestDataPath(): String
 
+    open val useNewInference get() = true
+
     override fun setUp() {
         super.setUp()
         VfsRootAccess.allowRootAccess(KotlinTestUtils.getHomeDirectory())
@@ -123,6 +125,13 @@ abstract class AbstractMultiModuleTest : DaemonAnalyzerTestCase() {
         val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getInitializedSettings(this)
         facetSettings.useProjectSettings = false
         facetSettings.coroutineSupport = LanguageFeature.State.ENABLED
+    }
+
+    fun Module.newInferenceMode(enabled: Boolean) {
+        val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getInitializedSettings(this)
+        facetSettings.useProjectSettings = false
+        facetSettings.compilerArguments?.newInference = enabled
+        facetSettings.updateMergedArguments()
     }
 
     protected fun checkFiles(

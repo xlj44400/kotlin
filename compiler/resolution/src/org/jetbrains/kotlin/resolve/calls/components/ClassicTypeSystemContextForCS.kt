@@ -6,19 +6,20 @@
 package org.jetbrains.kotlin.resolve.calls.components
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.resolve.calls.inference.components.ConstraintInjector
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutorByConstructorMap
 import org.jetbrains.kotlin.resolve.calls.inference.model.NewConstraintSystemImpl
 import org.jetbrains.kotlin.resolve.calls.inference.model.NewTypeVariable
+import org.jetbrains.kotlin.resolve.calls.model.KotlinCallComponents
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.ClassicTypeSystemContext
-import org.jetbrains.kotlin.types.checker.NewCapturedType
-import org.jetbrains.kotlin.types.checker.NewCapturedTypeConstructor
+import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.*
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-class ClassicTypeSystemContextForCS(override val builtIns: KotlinBuiltIns) : TypeSystemInferenceExtensionContextDelegate,
+class ClassicTypeSystemContextForCS(
+    override val builtIns: KotlinBuiltIns,
+    private val refineKotlinTypeChecker: RefineKotlinTypeChecker
+) : TypeSystemInferenceExtensionContextDelegate,
     ClassicTypeSystemContext,
     BuiltInsProvider {
 
@@ -30,6 +31,10 @@ class ClassicTypeSystemContextForCS(override val builtIns: KotlinBuiltIns) : Typ
     override fun TypeVariableMarker.freshTypeConstructor(): TypeConstructorMarker {
         require(this is NewTypeVariable, this::errorMessage)
         return this.freshTypeConstructor
+    }
+
+    override fun newBaseTypeCheckerContext(errorTypesEqualToAnything: Boolean): AbstractTypeCheckerContext {
+        return ClassicTypeCheckerContext(errorTypesEqualToAnything, refineKotlinTypeChecker = refineKotlinTypeChecker)
     }
 
     override fun createCapturedType(
@@ -80,8 +85,9 @@ private inline fun Any?.errorMessage(): String {
 
 @Suppress("FunctionName")
 fun NewConstraintSystemImpl(
-    constraintInjector: ConstraintInjector,
-    builtIns: KotlinBuiltIns
+    callComponents: KotlinCallComponents
 ): NewConstraintSystemImpl {
-    return NewConstraintSystemImpl(constraintInjector, ClassicTypeSystemContextForCS(builtIns))
+    return NewConstraintSystemImpl(
+        callComponents.constraintInjector, ClassicTypeSystemContextForCS(callComponents.builtIns, callComponents.refineKotlinTypeChecker)
+    )
 }

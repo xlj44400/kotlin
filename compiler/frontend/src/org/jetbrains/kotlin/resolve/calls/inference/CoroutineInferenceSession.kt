@@ -139,7 +139,7 @@ class CoroutineInferenceSession(
     }
 
     private fun buildCommonSystem(initialStorage: ConstraintStorage): NewConstraintSystemImpl {
-        val commonSystem = NewConstraintSystemImpl(callComponents.constraintInjector, builtIns)
+        val commonSystem = NewConstraintSystemImpl(callComponents)
 
         val nonFixedToVariablesSubstitutor = createNonFixedTypeToVariableSubstitutor()
 

@@ -50,4 +50,9 @@ abstract class AbstractMultiPlatformHighlightingTest : AbstractMultiModuleHighli
     override fun getTestDataPath() = "${PluginTestCaseBase.getTestDataPathBase()}/multiModuleHighlighting/multiplatform/"
 }
 
+abstract class AbstractMultiPlatformOldInferenceHighlightingTest : AbstractMultiPlatformHighlightingTest() {
+    override val useNewInference: Boolean
+        get() = false
+}
+
 private fun List<PsiFile>.excludeByDirective() = filter { !it.text.contains("// !CHECK_HIGHLIGHTING") }
