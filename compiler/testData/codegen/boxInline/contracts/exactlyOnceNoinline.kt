@@ -1,6 +1,6 @@
 // !LANGUAGE: +AllowContractsForCustomFunctions +UseCallsInPlaceEffect +ReadDeserializedContracts
 // !USE_EXPERIMENTAL: kotlin.contracts.ExperimentalContracts
-// IGNORE_BACKEND: JVM_IR, NATIVE, JS_IR
+// IGNORE_BACKEND: NATIVE
 // NO_CHECK_LAMBDA_INLINING
 // FILE: 1.kt
 package test

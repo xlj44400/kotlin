@@ -80,7 +80,8 @@ class SharedVariablesLowering(val context: BackendContext) : FunctionLoweringPas
                 override fun visitVariable(declaration: IrVariable, data: IrDeclarationParent?) {
                     declaration.acceptChildren(this, data)
 
-                    if (declaration.isVar) {
+                    // `val` locals can be initialized in a lambda inlined into `run` or similar.
+                    if (declaration.isVar || declaration.initializer == null) {
                         relevantVars.add(declaration)
                     }
                 }
