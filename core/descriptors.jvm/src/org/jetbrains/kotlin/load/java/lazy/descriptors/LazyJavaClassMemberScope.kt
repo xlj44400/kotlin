@@ -284,7 +284,8 @@ class LazyJavaClassMemberScope(
 
         // Merge functions with same signatures
         val mergedFunctionFromSuperTypes = resolveOverridesForNonStaticMembers(
-            name, functionsFromSupertypes, emptyList(), ownerDescriptor, ErrorReporter.DO_NOTHING
+            name, functionsFromSupertypes, emptyList(), ownerDescriptor, ErrorReporter.DO_NOTHING,
+            c.components.refineKotlinTypeChecker.overridingUtil
         )
 
         // add declarations
@@ -313,7 +314,8 @@ class LazyJavaClassMemberScope(
     ) {
 
         val additionalOverrides = resolveOverridesForNonStaticMembers(
-            name, functionsFromSupertypes, result, ownerDescriptor, c.components.errorReporter
+            name, functionsFromSupertypes, result, ownerDescriptor, c.components.errorReporter,
+            c.components.refineKotlinTypeChecker.overridingUtil
         )
 
         if (!isSpecialBuiltinName) {
@@ -456,7 +458,12 @@ class LazyJavaClassMemberScope(
 
         result.addAll(
             resolveOverridesForNonStaticMembers(
-                name, propertiesFromSupertypes + propertiesOverridesFromSuperTypes, result, ownerDescriptor, c.components.errorReporter
+                name,
+                propertiesFromSupertypes + propertiesOverridesFromSuperTypes,
+                result,
+                ownerDescriptor,
+                c.components.errorReporter,
+                c.components.refineKotlinTypeChecker.overridingUtil
             )
         )
     }

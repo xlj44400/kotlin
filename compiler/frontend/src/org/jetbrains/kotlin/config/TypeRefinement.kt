@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.config
 
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.resolve.OverridingUtil
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.RefineKotlinTypeChecker
@@ -43,4 +44,6 @@ class RefineKotlinTypeCheckerImpl(
     }
 
     override fun refineType(type: KotlinType): KotlinType = type.refineTypeIfNeeded(moduleDescriptor, languageVersionSettings)
+
+    override val overridingUtil = OverridingUtil.createWithRefinedTypeChecker(this)
 }

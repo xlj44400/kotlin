@@ -258,7 +258,7 @@ class DeserializedClassDescriptor(
             result: MutableCollection<D>
         ) {
             val fromCurrent = ArrayList<CallableMemberDescriptor>(result)
-            OverridingUtil.generateOverridesInFunctionGroup(
+            c.components.refineKotlinTypeChecker.overridingUtil.generateOverridesInFunctionGroup(
                 name,
                 fromSupertypes,
                 fromCurrent,
