@@ -91,8 +91,6 @@ object KotlinTypeFactory {
         val descriptor =
             basicDescriptor?.refineDescriptor(moduleDescriptor) ?: return null
 
-        if (descriptor == basicDescriptor) return null
-
         if (descriptor is TypeAliasDescriptor) {
             return ExpandedTypeOrRefinedConstructor(descriptor.computeExpandedType(arguments), null)
         }
@@ -209,7 +207,6 @@ private class SimpleTypeImpl(
     }
 
     override fun refine(moduleDescriptor: ModuleDescriptor): SimpleType {
-        if (constructor.declarationDescriptor?.module === moduleDescriptor) return this
         return refinedTypeFactory(moduleDescriptor) ?: this
     }
 }
