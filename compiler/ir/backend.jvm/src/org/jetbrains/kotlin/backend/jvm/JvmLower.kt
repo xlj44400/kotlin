@@ -112,6 +112,7 @@ val jvmPhases = namedIrFilePhase<JvmBackendContext>(
             propertiesPhase then
             renameFieldsPhase then
             annotationPhase then
+            tailrecPhase then
 
             defaultArgumentStubPhase then
 
@@ -144,7 +145,6 @@ val jvmPhases = namedIrFilePhase<JvmBackendContext>(
             jvmStaticAnnotationPhase then
             staticDefaultFunctionPhase then
 
-            tailrecPhase then
             toArrayPhase then
             flattenStringConcatenationPhase then
             foldConstantLoweringPhase then
