@@ -22,8 +22,8 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructor
 import org.jetbrains.kotlin.types.TypeConstructorSubstitution
 import org.jetbrains.kotlin.types.TypeSubstitutor
-import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.ClassicTypeCheckerContext
+import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.SmartList
 import org.jetbrains.kotlin.utils.keysToMap
@@ -137,12 +137,12 @@ object ExpectedActualResolver {
         return when (this) {
             is FunctionDescriptor -> scopes.flatMap {
                 it.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS, { it == name })
-                    .filter { it.name == name } as Collection<CallableMemberDescriptor>
+                    .filter { it.name == name }.filterIsInstance<CallableMemberDescriptor>()
             }
 
             is PropertyDescriptor -> scopes.flatMap {
                 it.getContributedDescriptors(DescriptorKindFilter.VARIABLES, { it == name })
-                    .filter { it.name == name } as Collection<CallableMemberDescriptor>
+                    .filter { it.name == name }.filterIsInstance<CallableMemberDescriptor>()
             }
 
             else -> throw AssertionError("Unsupported declaration: $this")
