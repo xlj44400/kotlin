@@ -139,6 +139,20 @@ open class ConstraintSystemBuilderImpl(
         superType: KotlinType?,
         constraintContext: ConstraintContext
     ) {
+        addConstraintWithoutRefinement(
+            constraintKind,
+            subType?.let(refineKotlinTypeChecker::refineType),
+            superType?.let(refineKotlinTypeChecker::refineType),
+            constraintContext
+        )
+    }
+
+    private fun addConstraintWithoutRefinement(
+        constraintKind: ConstraintKind,
+        subType: KotlinType?,
+        superType: KotlinType?,
+        constraintContext: ConstraintContext
+    ) {
         val constraintPosition = constraintContext.position
 
         // when processing nested constraints, `derivedFrom` information should be reset
