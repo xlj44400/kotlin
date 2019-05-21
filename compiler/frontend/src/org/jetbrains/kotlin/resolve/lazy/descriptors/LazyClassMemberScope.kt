@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.resolve.lazy.descriptors
 
 import org.jetbrains.kotlin.config.LanguageFeature
-import org.jetbrains.kotlin.config.refinedSupertypesIfNeeded
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DELEGATION
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.FAKE_OVERRIDE
@@ -78,7 +77,7 @@ open class LazyClassMemberScope(
 
     protected open fun computeExtraDescriptors(location: LookupLocation): Collection<DeclarationDescriptor> {
         val result = ArrayList<DeclarationDescriptor>()
-        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
+        for (supertype in supertypes) {
             for (descriptor in supertype.memberScope.getContributedDescriptors()) {
                 if (descriptor is FunctionDescriptor) {
                     result.addAll(getContributedFunctions(descriptor.name, location))
@@ -99,7 +98,7 @@ open class LazyClassMemberScope(
     }
 
     val supertypes by storageManager.createLazyValue {
-        thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)
+        c.refineKotlinTypeChecker.refineSupertypes(thisDescriptor)
     }
 
     private val _variableNames: MutableSet<Name>
@@ -209,7 +208,7 @@ open class LazyClassMemberScope(
         val location = NoLookupLocation.FOR_ALREADY_TRACKED
 
         val fromSupertypes = arrayListOf<SimpleFunctionDescriptor>()
-        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
+        for (supertype in supertypes) {
             fromSupertypes.addAll(supertype.memberScope.getContributedFunctions(name, location))
         }
         result.addAll(generateDelegatingDescriptors(name, EXTRACT_FUNCTIONS, result))
@@ -351,7 +350,7 @@ open class LazyClassMemberScope(
 
         // Members from supertypes
         val fromSupertypes = ArrayList<PropertyDescriptor>()
-        for (supertype in thisDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.languageVersionSettings)) {
+        for (supertype in supertypes) {
             fromSupertypes.addAll(supertype.memberScope.getContributedVariables(name, NoLookupLocation.FOR_ALREADY_TRACKED))
         }
         result.addAll(generateDelegatingDescriptors(name, EXTRACT_PROPERTIES, result))

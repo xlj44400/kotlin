@@ -57,7 +57,6 @@ import org.jetbrains.kotlin.storage.NotNullLazyValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
-import org.jetbrains.kotlin.types.typeUtil.refinedSupertypesIfNeeded
 import org.jetbrains.kotlin.utils.SmartSet
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
@@ -562,9 +561,8 @@ class LazyJavaClassMemberScope(
     }
 
     private fun computeSupertypes(): Collection<KotlinType> {
-        return ownerDescriptor.refinedSupertypesIfNeeded(
-            moduleDescriptor, !skipRefinement && c.components.settings.useRefinedTypes
-        )
+        if (skipRefinement) return ownerDescriptor.typeConstructor.supertypes
+        return c.components.refineKotlinTypeChecker.refineSupertypes(ownerDescriptor)
     }
 
     override fun resolveMethodSignature(

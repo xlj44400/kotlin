@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.serialization.deserialization.*
 import org.jetbrains.kotlin.types.AbstractClassTypeConstructor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructor
-import org.jetbrains.kotlin.types.typeUtil.refinedSupertypesIfNeeded
 import java.util.*
 
 class DeserializedClassDescriptor(
@@ -216,6 +215,10 @@ class DeserializedClassDescriptor(
             computeDescriptors(DescriptorKindFilter.ALL, MemberScope.ALL_NAME_FILTER, NoLookupLocation.WHEN_GET_ALL_DESCRIPTORS)
         }
 
+        private val refinedSupertypes = c.storageManager.createLazyValue {
+            c.components.refineKotlinTypeChecker.refineSupertypes(classDescriptor)
+        }
+
         override fun getContributedDescriptors(
             kindFilter: DescriptorKindFilter, nameFilter: (Name) -> Boolean
         ): Collection<DeclarationDescriptor> = allDescriptors()
@@ -232,7 +235,7 @@ class DeserializedClassDescriptor(
 
         override fun computeNonDeclaredFunctions(name: Name, functions: MutableCollection<SimpleFunctionDescriptor>) {
             val fromSupertypes = ArrayList<SimpleFunctionDescriptor>()
-            for (supertype in classDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.components.configuration.useRefineTypes)) {
+            for (supertype in refinedSupertypes()) {
                 fromSupertypes.addAll(supertype.memberScope.getContributedFunctions(name, NoLookupLocation.FOR_ALREADY_TRACKED))
             }
 
@@ -246,7 +249,7 @@ class DeserializedClassDescriptor(
 
         override fun computeNonDeclaredProperties(name: Name, descriptors: MutableCollection<PropertyDescriptor>) {
             val fromSupertypes = ArrayList<PropertyDescriptor>()
-            for (supertype in classDescriptor.refinedSupertypesIfNeeded(moduleDescriptor, c.components.configuration.useRefineTypes)) {
+            for (supertype in refinedSupertypes()) {
                 fromSupertypes.addAll(supertype.memberScope.getContributedVariables(name, NoLookupLocation.FOR_ALREADY_TRACKED))
             }
             generateFakeOverrides(name, fromSupertypes, descriptors)

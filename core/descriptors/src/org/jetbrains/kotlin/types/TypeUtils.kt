@@ -276,12 +276,3 @@ fun AbbreviatedType.unCapture(): SimpleType {
     val newType = expandedType.unCapture()
     return AbbreviatedType(newType, abbreviation)
 }
-
-fun ClassDescriptor.refinedSupertypesIfNeeded(
-    moduleDescriptor: ModuleDescriptor,
-    refine: Boolean
-): Collection<KotlinType> {
-    if (!refine) return typeConstructor.supertypes
-
-    return typeConstructor.supertypes.map { it.refine(moduleDescriptor) }
-}

@@ -11,12 +11,6 @@ import org.jetbrains.kotlin.resolve.OverridingUtil
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.RefineKotlinTypeChecker
-import org.jetbrains.kotlin.types.typeUtil.refinedSupertypesIfNeeded
-
-fun ClassDescriptor.refinedSupertypesIfNeeded(
-    moduleDescriptor: ModuleDescriptor,
-    languageVersionSettings: LanguageVersionSettings
-): Collection<KotlinType> = refinedSupertypesIfNeeded(moduleDescriptor, languageVersionSettings.getFlag(AnalysisFlags.useTypeRefinement))
 
 class RefineKotlinTypeCheckerImpl(
     private val moduleDescriptor: ModuleDescriptor,
@@ -39,6 +33,11 @@ class RefineKotlinTypeCheckerImpl(
     override fun refineType(type: KotlinType): KotlinType {
         if (isRefinementDisabled) return type
         return type.refine(moduleDescriptor)
+    }
+
+    override fun refineSupertypes(classDescriptor: ClassDescriptor): Collection<KotlinType> {
+        if (isRefinementDisabled) return classDescriptor.typeConstructor.supertypes
+        return classDescriptor.typeConstructor.supertypes.map { it.refine(moduleDescriptor) }
     }
 
     override val overridingUtil = OverridingUtil.createWithRefinedTypeChecker(this)

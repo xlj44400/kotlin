@@ -24,7 +24,6 @@ import com.intellij.util.containers.ContainerUtil
 import com.intellij.util.containers.SmartHashSet
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
-import org.jetbrains.kotlin.config.refinedSupertypesIfNeeded
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DELEGATION
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.FAKE_OVERRIDE
@@ -39,6 +38,7 @@ import org.jetbrains.kotlin.resolve.OverridingUtil.OverrideCompatibilityInfo.Res
 import org.jetbrains.kotlin.resolve.calls.callResolverUtil.isOrOverridesSynthesized
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
+import org.jetbrains.kotlin.types.checker.RefineKotlinTypeChecker
 import org.jetbrains.kotlin.utils.addToStdlib.assertedCast
 import java.util.*
 
@@ -46,7 +46,7 @@ class OverrideResolver(
     private val trace: BindingTrace,
     private val overridesBackwardCompatibilityHelper: OverridesBackwardCompatibilityHelper,
     private val languageVersionSettings: LanguageVersionSettings,
-    private val moduleDescriptor: ModuleDescriptor
+    private val refineKotlinTypeChecker: RefineKotlinTypeChecker
 ) {
 
     fun check(c: TopDownAnalysisContext) {
@@ -273,7 +273,7 @@ class OverrideResolver(
 
         if (hasOverrideNode) {
             checkOverridesForMemberMarkedOverride(
-                declared, moduleDescriptor, languageVersionSettings, object : CheckOverrideReportForDeclaredMemberStrategy {
+                declared, refineKotlinTypeChecker, object : CheckOverrideReportForDeclaredMemberStrategy {
                 private var finalOverriddenError = false
                 private var typeMismatchError = false
                 private var kindMismatchError = false
@@ -756,8 +756,7 @@ class OverrideResolver(
 
         private fun checkOverridesForMemberMarkedOverride(
             declared: CallableMemberDescriptor,
-            moduleDescriptor: ModuleDescriptor,
-            languageVersionSettings: LanguageVersionSettings,
+            refineKotlinTypeChecker: RefineKotlinTypeChecker,
             reportError: CheckOverrideReportForDeclaredMemberStrategy
         ) {
             val overriddenDescriptors = declared.overriddenDescriptors
@@ -771,7 +770,9 @@ class OverrideResolver(
                 }
 
                 val invisibleOverriddenDescriptor =
-                    findInvisibleOverriddenDescriptor(declared, declaringClass, moduleDescriptor, languageVersionSettings)
+                    findInvisibleOverriddenDescriptor(
+                        declared, declaringClass, refineKotlinTypeChecker
+                    )
                 if (invisibleOverriddenDescriptor != null) {
                     reportError.cannotOverrideInvisibleMember(declared, invisibleOverriddenDescriptor)
                 } else {
@@ -870,10 +871,9 @@ class OverrideResolver(
         private fun findInvisibleOverriddenDescriptor(
             declared: CallableMemberDescriptor,
             declaringClass: ClassDescriptor,
-            moduleDescriptor: ModuleDescriptor,
-            languageVersionSettings: LanguageVersionSettings
+            refineKotlinTypeChecker: RefineKotlinTypeChecker
         ): CallableMemberDescriptor? {
-            for (supertype in declaringClass.refinedSupertypesIfNeeded(moduleDescriptor, languageVersionSettings)) {
+            for (supertype in refineKotlinTypeChecker.refineSupertypes(declaringClass)) {
                 val all = linkedSetOf<CallableMemberDescriptor>()
                 all.addAll(supertype.memberScope.getContributedFunctions(declared.name, NoLookupLocation.WHEN_CHECK_OVERRIDES))
                 all.addAll(supertype.memberScope.getContributedVariables(declared.name, NoLookupLocation.WHEN_CHECK_OVERRIDES))
