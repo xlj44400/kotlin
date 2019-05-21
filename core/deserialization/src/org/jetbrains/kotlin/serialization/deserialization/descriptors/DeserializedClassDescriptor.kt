@@ -54,7 +54,8 @@ class DeserializedClassDescriptor(
     private val staticScope = if (kind == ClassKind.ENUM_CLASS) StaticScopeForKotlinEnum(c.storageManager, this) else MemberScope.Empty
     private val typeConstructor = DeserializedClassTypeConstructor()
 
-    private val memberScopeHolder = ScopesHolderForClass.create(this, c.storageManager, this::DeserializedClassMemberScope)
+    private val memberScopeHolder =
+        ScopesHolderForClass.create(this, c.storageManager, c.components.refineKotlinTypeChecker, this::DeserializedClassMemberScope)
 
     private val memberScope get() = memberScopeHolder.getScope(module)
     private val enumEntries = if (kind == ClassKind.ENUM_CLASS) EnumEntryClassDescriptors() else null

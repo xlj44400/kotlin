@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinition
 import org.jetbrains.kotlin.scripting.definitions.ScriptDependenciesProvider
 import org.jetbrains.kotlin.scripting.definitions.ScriptPriorities
 import org.jetbrains.kotlin.scripting.definitions.scriptDefinitionByFileName
-import org.jetbrains.kotlin.storage.NotNullLazyValue
 import org.jetbrains.kotlin.types.TypeSubstitutor
 import org.jetbrains.kotlin.types.typeUtil.isNothing
 import org.jetbrains.kotlin.types.typeUtil.isUnit
@@ -122,7 +121,7 @@ class LazyScriptDescriptor(
         c: LazyClassContext,
         declarationProvider: ClassMemberDeclarationProvider
     ): ScopesHolderForClass<LazyClassMemberScope> =
-        ScopesHolderForClass.create(this, c.storageManager) {
+        ScopesHolderForClass.create(this, c.storageManager, c.refineKotlinTypeChecker) {
             LazyScriptClassMemberScope(
                 // Must be a ResolveSession for scripts
                 c as ResolveSession,

@@ -9,25 +9,20 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.storage.getValue
-import org.jetbrains.kotlin.types.TypeConstructor
-import org.jetbrains.kotlin.utils.DFS
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import org.jetbrains.kotlin.types.checker.RefineKotlinTypeChecker
 
 class ScopesHolderForClass<T : MemberScope> private constructor(
     private val classDescriptor: ClassDescriptor,
     storageManager: StorageManager,
+    private val refineKotlinTypeChecker: RefineKotlinTypeChecker,
     private val scopeFactory: (ModuleDescriptor) -> T
 ) {
     private val scopeForOwnerModule by storageManager.createLazyValue { scopeFactory(classDescriptor.module) }
 
-    private val scopeOrMemoizedFunction by storageManager.createLazyValue {
-        classDescriptor.typeConstructor.areThereExpectSupertypes()
-    }
-
     fun getScope(moduleDescriptor: ModuleDescriptor): T {
         if (classDescriptor.module === moduleDescriptor) return scopeForOwnerModule
 
-        if (!scopeOrMemoizedFunction) return scopeForOwnerModule
+        if (!refineKotlinTypeChecker.isRefinementNeeded(classDescriptor.typeConstructor)) return scopeForOwnerModule
         return moduleDescriptor.getOrPutScopeForClass(classDescriptor) { scopeFactory(moduleDescriptor) }
     }
 
@@ -35,36 +30,10 @@ class ScopesHolderForClass<T : MemberScope> private constructor(
         fun <T : MemberScope> create(
             classDescriptor: ClassDescriptor,
             storageManager: StorageManager,
+            refineKotlinTypeChecker: RefineKotlinTypeChecker,
             scopeFactory: (ModuleDescriptor) -> T
         ): ScopesHolderForClass<T> {
-            return ScopesHolderForClass(classDescriptor, storageManager, scopeFactory)
+            return ScopesHolderForClass(classDescriptor, storageManager, refineKotlinTypeChecker, scopeFactory)
         }
     }
 }
-
-fun TypeConstructor.areThereExpectSupertypes(): Boolean {
-    var result = false
-    DFS.dfs(
-        listOf(this),
-        DFS.Neighbors { current ->
-            current.supertypes.map { it.constructor }
-        },
-        DFS.VisitedWithSet(),
-        object : DFS.AbstractNodeHandler<TypeConstructor, Unit>() {
-            override fun beforeChildren(current: TypeConstructor): Boolean {
-                if (current.isExpectClass()) {
-                    result = true
-                    return false
-                }
-                return true
-            }
-
-            override fun result() = Unit
-        }
-    )
-
-    return result
-}
-
-private fun TypeConstructor.isExpectClass() =
-    declarationDescriptor?.safeAs<ClassDescriptor>()?.isExpect == true

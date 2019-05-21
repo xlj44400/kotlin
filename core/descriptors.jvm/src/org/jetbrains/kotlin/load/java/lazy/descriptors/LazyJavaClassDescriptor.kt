@@ -104,13 +104,14 @@ class LazyJavaClassDescriptor(
     private val unsubstitutedMemberScope =
         LazyJavaClassMemberScope(c, this, jClass, module, skipRefinement = additionalSupertypeClassDescriptor != null)
 
-    private val scopeHolder = ScopesHolderForClass.create(this, c.storageManager) { moduleDescriptor ->
-        LazyJavaClassMemberScope(
-            c, this, jClass, moduleDescriptor,
-            skipRefinement = additionalSupertypeClassDescriptor != null,
-            mainScope = unsubstitutedMemberScope
-        )
-    }
+    private val scopeHolder =
+        ScopesHolderForClass.create(this, c.storageManager, c.components.refineKotlinTypeChecker) { moduleDescriptor ->
+            LazyJavaClassMemberScope(
+                c, this, jClass, moduleDescriptor,
+                skipRefinement = additionalSupertypeClassDescriptor != null,
+                mainScope = unsubstitutedMemberScope
+            )
+        }
 
     override fun getUnsubstitutedMemberScope(moduleDescriptor: ModuleDescriptor) = scopeHolder.getScope(moduleDescriptor)
 
