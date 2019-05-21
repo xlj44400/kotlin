@@ -1199,6 +1199,29 @@ class KotlinTypeMapper @JvmOverloads constructor(
             ?: computeInternalName(classDescriptor, typeMappingConfiguration, isIrBackend)
     }
 
+    private fun getDefaultDescriptor(
+        method: Method,
+        dispatchReceiverDescriptor: String?,
+        callableDescriptor: CallableDescriptor
+    ): String {
+        val descriptor = method.descriptor
+        val extraArgsShift = when {
+            isIrBackend && isConstructor(method) && isEnumClass(callableDescriptor.containingDeclaration) -> 2
+            isIrBackend && isConstructor(method) && (callableDescriptor.containingDeclaration as? ClassDescriptor)?.isInner == true -> 1
+            else -> 0
+        }
+        val maskArgumentsCount = (callableDescriptor.valueParameters.size - extraArgsShift + Integer.SIZE - 1) / Integer.SIZE
+        val defaultConstructorMarkerType = if (isConstructor(method) || isInlineClassConstructor(callableDescriptor))
+            DEFAULT_CONSTRUCTOR_MARKER
+        else
+            OBJECT_TYPE
+        val additionalArgs = StringUtil.repeat(Type.INT_TYPE.descriptor, maskArgumentsCount) + defaultConstructorMarkerType.descriptor
+        val result = descriptor.replace(")", "$additionalArgs)")
+        return if (dispatchReceiverDescriptor != null && !isConstructor(method)) {
+            result.replace("(", "($dispatchReceiverDescriptor")
+        } else result
+    }
+
     object InternalNameMapper {
         fun mangleInternalName(name: String, moduleName: String): String {
             return name + "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName)
@@ -1572,24 +1595,6 @@ class KotlinTypeMapper @JvmOverloads constructor(
             val facadeShortName = containingClassesInfo.facadeClassId.shortClassName.asString()
             val implShortName = containingClassesInfo.implClassId.shortClassName.asString()
             return if (facadeShortName != implShortName) implShortName else null
-        }
-
-        private fun getDefaultDescriptor(
-            method: Method,
-            dispatchReceiverDescriptor: String?,
-            callableDescriptor: CallableDescriptor
-        ): String {
-            val descriptor = method.descriptor
-            val maskArgumentsCount = (callableDescriptor.valueParameters.size + Integer.SIZE - 1) / Integer.SIZE
-            val defaultConstructorMarkerType = if (isConstructor(method) || isInlineClassConstructor(callableDescriptor))
-                DEFAULT_CONSTRUCTOR_MARKER
-            else
-                OBJECT_TYPE
-            val additionalArgs = StringUtil.repeat(Type.INT_TYPE.descriptor, maskArgumentsCount) + defaultConstructorMarkerType.descriptor
-            val result = descriptor.replace(")", "$additionalArgs)")
-            return if (dispatchReceiverDescriptor != null && !isConstructor(method)) {
-                result.replace("(", "($dispatchReceiverDescriptor")
-            } else result
         }
 
         private fun isConstructor(method: Method): Boolean {
