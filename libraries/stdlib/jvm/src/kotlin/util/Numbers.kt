@@ -136,7 +136,36 @@ public inline fun Int.takeHighestOneBit(): Int = Integer.highestOneBit(this)
 @kotlin.internal.InlineOnly
 public inline fun Int.takeLowestOneBit(): Int = Integer.lowestOneBit(this)
 
+/**
+ * Rotates the binary representation of this [Int] number left by the specified [bitCount] number of bits.
+ * The most significant bits pushed out from the left side reenter the number as the least significant bits on the right side.
+ *
+ * Rotating the number left by a negative bit count is the same as rotating it right by the negated bit count:
+ * `number.rotateLeft(-n) == number.rotateRight(n)`
+ *
+ * Rotating by a multiple of [Int.SIZE_BITS] (32) returns the same number, or more generally
+ * `number.rotateLeft(n) == number.rotateLeft(n % 32)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.rotateLeft(bitCount: Int): Int = Integer.rotateLeft(this, bitCount)
 
+
+/**
+ * Rotates the binary representation of this [Int] number right by the specified [bitCount] number of bits.
+ * The least significant bits pushed out from the right side reenter the number as the most significant bits on the left side.
+ *
+ * Rotating the number right by a negative bit count is the same as rotating it left by the negated bit count:
+ * `number.rotateRight(-n) == number.rotateLeft(n)`
+ *
+ * Rotating by a multiple of [Int.SIZE_BITS] (32) returns the same number, or more generally
+ * `number.rotateRight(n) == number.rotateRight(n % 32)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.rotateRight(bitCount: Int): Int = Integer.rotateRight(this, bitCount)
 
 
 /**
@@ -181,6 +210,35 @@ public inline fun Long.takeHighestOneBit(): Long = java.lang.Long.highestOneBit(
 @kotlin.internal.InlineOnly
 public inline fun Long.takeLowestOneBit(): Long = java.lang.Long.lowestOneBit(this)
 
+/**
+ * Rotates the binary representation of this [Long] number left by the specified [bitCount] number of bits.
+ * The most significant bits pushed out from the left side reenter the number as the least significant bits on the right side.
+ *
+ * Rotating the number left by a negative bit count is the same as rotating it right by the negated bit count:
+ * `number.rotateLeft(-n) == number.rotateRight(n)`
+ *
+ * Rotating by a multiple of [Long.SIZE_BITS] (64) returns the same number, or more generally
+ * `number.rotateLeft(n) == number.rotateLeft(n % 64)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.rotateLeft(bitCount: Int): Long = java.lang.Long.rotateLeft(this, bitCount)
+
+/**
+ * Rotates the binary representation of this [Long] number right by the specified [bitCount] number of bits.
+ * The least significant bits pushed out from the right side reenter the number as the most significant bits on the left side.
+ *
+ * Rotating the number right by a negative bit count is the same as rotating it left by the negated bit count:
+ * `number.rotateRight(-n) == number.rotateLeft(n)`
+ *
+ * Rotating by a multiple of [Long.SIZE_BITS] (64) returns the same number, or more generally
+ * `number.rotateRight(n) == number.rotateRight(n % 64)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.rotateRight(bitCount: Int): Long = java.lang.Long.rotateRight(this, bitCount)
 
 /**
  * Counts the number of set bits in the binary representation of this [Byte] number.
@@ -225,6 +283,36 @@ public inline fun Byte.takeHighestOneBit(): Byte = (toInt() and 0xFF).takeHighes
 public inline fun Byte.takeLowestOneBit(): Byte = toInt().takeLowestOneBit().toByte()
 
 
+/**
+ * Rotates the binary representation of this [Byte] number left by the specified [bitCount] number of bits.
+ * The most significant bits pushed out from the left side reenter the number as the least significant bits on the right side.
+ *
+ * Rotating the number left by a negative bit count is the same as rotating it right by the negated bit count:
+ * `number.rotateLeft(-n) == number.rotateRight(n)`
+ *
+ * Rotating by a multiple of [Byte.SIZE_BITS] (8) returns the same number, or more generally
+ * `number.rotateLeft(n) == number.rotateLeft(n % 8)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+public fun Byte.rotateLeft(bitCount: Int): Byte {
+    return (toInt().shl(bitCount and 7) or (toInt() and 0xFF).ushr(8 - (bitCount and 7))).toByte()
+}
+
+/**
+ * Rotates the binary representation of this [Byte] number right by the specified [bitCount] number of bits.
+ * The least significant bits pushed out from the right side reenter the number as the most significant bits on the left side.
+ *
+ * Rotating the number right by a negative bit count is the same as rotating it left by the negated bit count:
+ * `number.rotateRight(-n) == number.rotateLeft(n)`
+ *
+ * Rotating by a multiple of [Byte.SIZE_BITS] (8) returns the same number, or more generally
+ * `number.rotateRight(n) == number.rotateRight(n % 8)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+public fun Byte.rotateRight(bitCount: Int): Byte =
+    (toInt().shl(8 - (bitCount and 7)) or (toInt() and 0xFF).ushr(bitCount and 7)).toByte()
 
 /**
  * Counts the number of set bits in the binary representation of this [Short] number.
@@ -267,3 +355,36 @@ public inline fun Short.takeHighestOneBit(): Short = (toInt() and 0xFFFF).takeHi
 @ExperimentalStdlibApi
 @kotlin.internal.InlineOnly
 public inline fun Short.takeLowestOneBit(): Short = toInt().takeLowestOneBit().toShort()
+
+
+/**
+ * Rotates the binary representation of this [Short] number left by the specified [bitCount] number of bits.
+ * The most significant bits pushed out from the left side reenter the number as the least significant bits on the right side.
+ *
+ * Rotating the number left by a negative bit count is the same as rotating it right by the negated bit count:
+ * `number.rotateLeft(-n) == number.rotateRight(n)`
+ *
+ * Rotating by a multiple of [Short.SIZE_BITS] (16) returns the same number, or more generally
+ * `number.rotateLeft(n) == number.rotateLeft(n % 16)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+public fun Short.rotateLeft(bitCount: Int): Short {
+    return (toInt().shl(bitCount and 15) or (toInt() and 0xFFFF).ushr(16 - (bitCount and 15))).toShort()
+}
+
+/**
+ * Rotates the binary representation of this [Short] number right by the specified [bitCount] number of bits.
+ * The least significant bits pushed out from the right side reenter the number as the most significant bits on the left side.
+ *
+ * Rotating the number right by a negative bit count is the same as rotating it left by the negated bit count:
+ * `number.rotateRight(-n) == number.rotateLeft(n)`
+ *
+ * Rotating by a multiple of [Short.SIZE_BITS] (16) returns the same number, or more generally
+ * `number.rotateRight(n) == number.rotateRight(n % 16)`
+ */
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+public fun Short.rotateRight(bitCount: Int): Short =
+    (toInt().shl(16 - (bitCount and 15)) or (toInt() and 0xFFFF).ushr(bitCount and 15)).toShort()
+

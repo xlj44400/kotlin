@@ -95,6 +95,13 @@ public final class kotlin/LazyThreadSafetyMode : java/lang/Enum {
 	public static fun values ()[Lkotlin/LazyThreadSafetyMode;
 }
 
+public final class kotlin/MathKt {
+	public static final fun rotateLeft (BI)B
+	public static final fun rotateLeft (SI)S
+	public static final fun rotateRight (BI)B
+	public static final fun rotateRight (SI)S
+}
+
 public abstract interface annotation class kotlin/Metadata : java/lang/annotation/Annotation {
 	public abstract fun bv ()[I
 	public abstract fun d1 ()[Ljava/lang/String;
