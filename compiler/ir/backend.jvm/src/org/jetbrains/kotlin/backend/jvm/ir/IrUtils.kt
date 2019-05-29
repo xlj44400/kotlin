@@ -5,14 +5,18 @@
 
 package org.jetbrains.kotlin.backend.jvm.ir
 
+import org.jetbrains.kotlin.backend.jvm.JvmBackendContext
 import org.jetbrains.kotlin.backend.jvm.codegen.isJvmInterface
-import org.jetbrains.kotlin.ir.declarations.IrClass
-import org.jetbrains.kotlin.ir.declarations.IrTypeParameter
+import org.jetbrains.kotlin.config.JvmTarget
+import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrTypeParameterSymbol
 import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.classifierOrNull
+import org.jetbrains.kotlin.ir.util.hasAnnotation
+import org.jetbrains.kotlin.ir.util.isInterface
+import org.jetbrains.kotlin.resolve.jvm.annotations.JVM_DEFAULT_FQ_NAME
 
 /**
  * Computes the erased class for this type parameter according to the java erasure rules.
@@ -37,3 +41,17 @@ val IrType.erasedUpperBound: IrClass
         is IrTypeParameterSymbol -> classifier.owner.erasedUpperBound
         else -> throw IllegalStateException()
     }
+
+val IrFunction.propertyIfAccessor: IrDeclaration
+    get() = (this as? IrSimpleFunction)?.correspondingPropertySymbol?.owner ?: this
+
+fun IrFunction.annotatedWithJvmDefault(): Boolean = propertyIfAccessor.hasAnnotation(JVM_DEFAULT_FQ_NAME)
+
+fun IrFunction.isJvmDefault(context: JvmBackendContext): Boolean = annotatedWithJvmDefault() &&
+        context.state.target.bytecodeVersion >= JvmTarget.JVM_1_8.bytecodeVersion &&
+        context.state.jvmDefaultMode.isEnabled &&
+        (parent as? IrClass)?.isInterface == true
+
+fun IrFunction.inDefaultImpls(context: JvmBackendContext): Boolean =
+    !isJvmDefault(context) || context.state.jvmDefaultMode.isCompatibility
+
