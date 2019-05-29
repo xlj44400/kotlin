@@ -5,7 +5,6 @@
 
 package org.jetbrains.kotlin.fir.resolve.impl
 
-import gnu.trove.THashMap
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
@@ -96,11 +95,11 @@ class FirProviderImpl(val session: FirSession) : FirProvider {
     private val state = State()
 
     private class State {
-        val fileMap = THashMap<FqName, List<FirFile>>()
-        val classifierMap = THashMap<ClassId, FirClassLikeDeclaration>()
-        val classifierContainerFileMap = THashMap<ClassId, FirFile>()
-        val callableMap = THashMap<CallableId, List<ConeCallableSymbol>>()
-        val callableContainerMap = THashMap<ConeCallableSymbol, FirFile>()
+        val fileMap = mutableMapOf<FqName, List<FirFile>>()
+        val classifierMap = mutableMapOf<ClassId, FirClassLikeDeclaration>()
+        val classifierContainerFileMap = mutableMapOf<ClassId, FirFile>()
+        val callableMap = mutableMapOf<CallableId, List<ConeCallableSymbol>>()
+        val callableContainerMap = mutableMapOf<ConeCallableSymbol, FirFile>()
 
         fun setFrom(other: State) {
             fileMap.clear()

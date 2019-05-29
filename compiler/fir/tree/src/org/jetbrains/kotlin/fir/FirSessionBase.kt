@@ -5,12 +5,11 @@
 
 package org.jetbrains.kotlin.fir
 
-import gnu.trove.THashMap
 import org.jetbrains.kotlin.analyzer.ModuleInfo
 import kotlin.reflect.KClass
 
 abstract class FirSessionBase : FirSession {
-    override val components: MutableMap<KClass<*>, Any> = THashMap()
+    override val components: MutableMap<KClass<*>, Any> = mutableMapOf()
 
     override val moduleInfo: ModuleInfo?
         get() = null

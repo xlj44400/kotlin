@@ -7,7 +7,6 @@ package org.jetbrains.kotlin.fir.java
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
-import gnu.trove.THashMap
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -265,7 +264,7 @@ class JavaSymbolProvider(
             .map { it.fir }
     }
 
-    private val knownClassNamesInPackage = THashMap<FqName, Set<String>?>()
+    private val knownClassNamesInPackage = mutableMapOf<FqName, Set<String>?>()
 
     private fun hasTopLevelClassOf(classId: ClassId): Boolean {
         val knownNames = knownClassNamesInPackage.getOrPut(classId.packageFqName) {
