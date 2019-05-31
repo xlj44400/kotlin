@@ -41,8 +41,8 @@ class KotlinScriptResolveScopeProvider : ResolveScopeProvider() {
             scriptDefinition.baseClassType.fromClass == Any::class -> null
             scriptDefinition.asLegacyOrNull<StandardIdeScriptDefinition>() != null -> null
             scriptDefinition is ScriptDefinition.FromConfigurations || scriptDefinition.asLegacyOrNull<KotlinScriptDefinitionFromAnnotatedTemplate>() != null -> {
-                // TODO: should include the file itself
-                ScriptDependenciesManager.getInstance(project).getAllScriptsDependenciesClassFilesScope()
+                GlobalSearchScope.fileScope(project, file)
+                    .union(ScriptDependenciesManager.getInstance(project).getScriptDependenciesClassFilesScope(file))
             }
             else -> null
         }
