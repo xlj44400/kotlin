@@ -803,6 +803,161 @@ public class DiagnosticsTestSpecGenerated extends AbstractDiagnosticsTestSpec {
             }
         }
 
+        @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-inference")
+        @TestDataPath("$PROJECT_ROOT")
+        @RunWith(JUnit3RunnerWithInners.class)
+        public static class Type_inference extends AbstractDiagnosticsTestSpec {
+            private void runTest(String testDataFilePath) throws Exception {
+                KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+            }
+
+            public void testAllFilesPresentInType_inference() throws Exception {
+                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-inference"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts")
+            @TestDataPath("$PROJECT_ROOT")
+            @RunWith(JUnit3RunnerWithInners.class)
+            public static class Smart_casts extends AbstractDiagnosticsTestSpec {
+                private void runTest(String testDataFilePath) throws Exception {
+                    KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                }
+
+                public void testAllFilesPresentInSmart_casts() throws Exception {
+                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                }
+
+                @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts/smart-casts-sources")
+                @TestDataPath("$PROJECT_ROOT")
+                @RunWith(JUnit3RunnerWithInners.class)
+                public static class Smart_casts_sources extends AbstractDiagnosticsTestSpec {
+                    private void runTest(String testDataFilePath) throws Exception {
+                        KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                    }
+
+                    public void testAllFilesPresentInSmart_casts_sources() throws Exception {
+                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts/smart-casts-sources"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                    }
+
+                    @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts/smart-casts-sources/p-4")
+                    @TestDataPath("$PROJECT_ROOT")
+                    @RunWith(JUnit3RunnerWithInners.class)
+                    public static class P_4 extends AbstractDiagnosticsTestSpec {
+                        private void runTest(String testDataFilePath) throws Exception {
+                            KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                        }
+
+                        public void testAllFilesPresentInP_4() throws Exception {
+                            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-inference/smart-casts/smart-casts-sources/p-4"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                        }
+                    }
+                }
+            }
+        }
+
+        @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system")
+        @TestDataPath("$PROJECT_ROOT")
+        @RunWith(JUnit3RunnerWithInners.class)
+        public static class Type_system extends AbstractDiagnosticsTestSpec {
+            private void runTest(String testDataFilePath) throws Exception {
+                KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+            }
+
+            public void testAllFilesPresentInType_system() throws Exception {
+                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction")
+            @TestDataPath("$PROJECT_ROOT")
+            @RunWith(JUnit3RunnerWithInners.class)
+            public static class Introduction extends AbstractDiagnosticsTestSpec {
+                private void runTest(String testDataFilePath) throws Exception {
+                    KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                }
+
+                public void testAllFilesPresentInIntroduction() throws Exception {
+                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                }
+
+                @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5")
+                @TestDataPath("$PROJECT_ROOT")
+                @RunWith(JUnit3RunnerWithInners.class)
+                public static class P_5 extends AbstractDiagnosticsTestSpec {
+                    private void runTest(String testDataFilePath) throws Exception {
+                        KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                    }
+
+                    public void testAllFilesPresentInP_5() throws Exception {
+                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                    }
+
+                    @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5/neg")
+                    @TestDataPath("$PROJECT_ROOT")
+                    @RunWith(JUnit3RunnerWithInners.class)
+                    public static class Neg extends AbstractDiagnosticsTestSpec {
+                        private void runTest(String testDataFilePath) throws Exception {
+                            KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                        }
+
+                        @TestMetadata("2.1.kt")
+                        public void test2_1() throws Exception {
+                            runTest("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5/neg/2.1.kt");
+                        }
+
+                        @TestMetadata("2.2.kt")
+                        public void test2_2() throws Exception {
+                            runTest("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5/neg/2.2.kt");
+                        }
+
+                        @TestMetadata("2.3.kt")
+                        public void test2_3() throws Exception {
+                            runTest("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5/neg/2.3.kt");
+                        }
+
+                        public void testAllFilesPresentInNeg() throws Exception {
+                            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-5/neg"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                        }
+                    }
+                }
+
+                @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7")
+                @TestDataPath("$PROJECT_ROOT")
+                @RunWith(JUnit3RunnerWithInners.class)
+                public static class P_7 extends AbstractDiagnosticsTestSpec {
+                    private void runTest(String testDataFilePath) throws Exception {
+                        KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                    }
+
+                    public void testAllFilesPresentInP_7() throws Exception {
+                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                    }
+
+                    @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7/pos")
+                    @TestDataPath("$PROJECT_ROOT")
+                    @RunWith(JUnit3RunnerWithInners.class)
+                    public static class Pos extends AbstractDiagnosticsTestSpec {
+                        private void runTest(String testDataFilePath) throws Exception {
+                            KotlinTestUtils.runTest(this::doTest, TargetBackend.ANY, testDataFilePath);
+                        }
+
+                        @TestMetadata("1.1.kt")
+                        public void test1_1() throws Exception {
+                            runTest("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7/pos/1.1.kt");
+                        }
+
+                        @TestMetadata("2.1.kt")
+                        public void test2_1() throws Exception {
+                            runTest("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7/pos/2.1.kt");
+                        }
+
+                        public void testAllFilesPresentInPos() throws Exception {
+                            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/tests-spec/testData/diagnostics/linked/type-system/introduction/p-7/pos"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                        }
+                    }
+                }
+            }
+        }
+
         @TestMetadata("compiler/tests-spec/testData/diagnostics/linked/when-expression")
         @TestDataPath("$PROJECT_ROOT")
         @RunWith(JUnit3RunnerWithInners.class)
