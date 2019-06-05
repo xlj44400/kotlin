@@ -1,3 +1,5 @@
+import java.util.Properties
+
 extra["versions.shadow"] = "4.0.3"
 extra["versions.native-platform"] = "0.14"
 
@@ -64,8 +66,10 @@ rootProject.apply {
     from(rootProject.file("../gradle/versions.gradle.kts"))
 }
 
+val flags = LocalBuildProperties(project)
+
 val isTeamcityBuild = project.hasProperty("teamcity") || System.getenv("TEAMCITY_VERSION") != null
-val intellijUltimateEnabled by extra(project.getBooleanProperty("intellijUltimateEnabled") ?: isTeamcityBuild)
+val intellijUltimateEnabled: Boolean = flags.intellijUltimateEnabled
 val intellijSeparateSdks by extra(project.getBooleanProperty("intellijSeparateSdks") ?: false)
 val verifyDependencyOutput by extra( getBooleanProperty("kotlin.build.dependency.output.verification") ?: isTeamcityBuild)
 
@@ -77,6 +81,8 @@ else
 extra["versions.androidDxSources"] = "5.0.0_r2"
 
 extra["customDepsOrg"] = "kotlin.build"
+
+extra["intellijUltimateEnabled"] = intellijUltimateEnabled
 
 repositories {
     maven("https://jetbrains.bintray.com/intellij-third-party-dependencies/")
@@ -115,4 +121,27 @@ allprojects {
         apply(from = "$rootDir/../gradle/cacheRedirector.gradle.kts")
         tasks["check"].dependsOn(tasks["checkRepositories"])
     }
+}
+
+class LocalBuildPropertiesProvider(private val project: Project) {
+    private val localProperties: Properties = Properties()
+
+    val rootProjectDir: File = project.rootProject.rootDir.parentFile
+
+    init {
+        rootProjectDir.resolve("local.properties").takeIf { it.isFile }?.let {
+            it.reader().use(localProperties::load)
+        }
+    }
+
+    fun getString(name: String): String? = project.findProperty(name)?.toString() ?: localProperties[name]?.toString()
+
+    fun getBoolean(name: String): Boolean = getString(name)?.toBoolean() == true
+}
+
+class LocalBuildProperties(project: Project) {
+    val propertiesProvider = LocalBuildPropertiesProvider(project)
+
+    val intellijUltimateEnabled =
+        propertiesProvider.getBoolean("intellijUltimateEnabled") && propertiesProvider.rootProjectDir.resolve("kotlin-ultimate").exists()
 }
