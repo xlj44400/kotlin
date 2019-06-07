@@ -48,6 +48,7 @@ package org.jetbrains.kotlin.codegen.inline;
 
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.utils.SmartHashMap;
 import org.jetbrains.org.objectweb.asm.*;
 
 import java.util.*;
@@ -106,7 +107,7 @@ public class MaxStackFrameSizeAndLocalsCalculator extends MaxLocalsCalculator {
     private int maxStack;
 
     private final Collection<ExceptionHandler> exceptionHandlers = new LinkedList<>();
-    private final Map<Label, LabelWrapper> labelWrappersMap = new HashMap<>();
+    private final Map<Label, LabelWrapper> labelWrappersMap = new SmartHashMap<>();
 
     public MaxStackFrameSizeAndLocalsCalculator(int api, int access, String descriptor, MethodVisitor mv) {
         super(api, access, descriptor, mv);
@@ -336,10 +337,10 @@ public class MaxStackFrameSizeAndLocalsCalculator extends MaxLocalsCalculator {
          */
         int max = 0;
         Stack<LabelWrapper> stack = new Stack<>();
-        Set<LabelWrapper> pushed = new HashSet<>();
+        Map<LabelWrapper, LabelWrapper> pushed = new SmartHashMap<>();
 
         stack.push(firstLabel);
-        pushed.add(firstLabel);
+        pushed.put(firstLabel, firstLabel);
 
         while (!stack.empty()) {
             LabelWrapper current = stack.pop();
@@ -355,11 +356,11 @@ public class MaxStackFrameSizeAndLocalsCalculator extends MaxLocalsCalculator {
             for (ControlFlowEdge edge : current.successors) {
                 LabelWrapper successor = edge.successor;
 
-                if (!pushed.contains(successor)) {
+                if (!pushed.containsKey(successor)) {
                     // computes its true beginning stack size...
                     successor.inputStackSize = edge.isExceptional ? 1 : start + edge.outputStackSize;
                     // ...and pushes it onto the stack
-                    pushed.add(successor);
+                    pushed.put(successor, successor);
                     stack.push(successor);
                 }
             }
