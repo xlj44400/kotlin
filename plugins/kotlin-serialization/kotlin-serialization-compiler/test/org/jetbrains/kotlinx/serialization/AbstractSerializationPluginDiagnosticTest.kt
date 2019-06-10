@@ -5,18 +5,16 @@
 
 package org.jetbrains.kotlinx.serialization
 
-import junit.framework.TestCase
 import org.jetbrains.kotlin.checkers.AbstractDiagnosticsTest
 import org.jetbrains.kotlin.cli.jvm.config.JvmClasspathRoot
-import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
-import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationPluginComponentContainerContributor
+import org.jetbrains.kotlinx.serialization.compiler.extensions.SerializationComponentRegistrar
 import java.io.File
 
 abstract class AbstractSerializationPluginDiagnosticTest : AbstractDiagnosticsTest() {
     private val runtimeLibraryPath = getSerializationLibraryRuntimeJar()
 
     override fun createEnvironment(file: File) = super.createEnvironment(file).apply {
-        StorageComponentContainerContributor.registerExtension(project, SerializationPluginComponentContainerContributor())
+        SerializationComponentRegistrar.registerExtensions(this.project)
         updateClasspath(listOf(JvmClasspathRoot(runtimeLibraryPath!!)))
     }
 }
