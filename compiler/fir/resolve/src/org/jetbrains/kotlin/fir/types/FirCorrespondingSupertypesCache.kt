@@ -9,33 +9,31 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.toFirClassLike
 import org.jetbrains.kotlin.fir.resolve.constructClassType
 import org.jetbrains.kotlin.fir.resolve.constructType
+import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeSymbol
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.types.AbstractTypeCheckerContext
 import org.jetbrains.kotlin.types.model.CaptureStatus
 import org.jetbrains.kotlin.types.model.SimpleTypeMarker
 import org.jetbrains.kotlin.types.model.TypeConstructorMarker
 
-class FirCorrespondingSupertypesCache(session: FirSession) {
+class FirCorrespondingSupertypesCache(private val session: FirSession) {
     private val context = ConeTypeCheckerContext(false, session)
-    private val cache = mutableMapOf<ClassId, Map<ClassId, List<ConeClassLikeType>>?>()
+    private val cache = mutableMapOf<ConeClassLikeSymbol, Map<ConeClassLikeSymbol, List<ConeClassLikeType>>?>()
 
     fun getCorrespondingSupertypes(
         type: ConeLookupTagBasedType,
         supertypeConstructor: TypeConstructorMarker
     ): List<ConeClassLikeType>? {
-        if (type !is ConeClassLikeType) return null
+        if (type !is ConeClassLikeType || supertypeConstructor !is ConeClassLikeSymbol) return null
 
-        val classId = type.lookupTag.classId
-        val supertypeClassId = (supertypeConstructor as? ConeClassLikeSymbol)?.classId ?: return null
+        val symbol = type.lookupTag.toSymbol(session) as? ConeClassLikeSymbol ?: return null
+        if (symbol == supertypeConstructor) return listOf(type)
 
-        if (classId == supertypeClassId) return listOf(type)
-
-        if (classId !in cache) {
-            cache[classId] = computeSupertypesMap(type, classId)
+        if (symbol !in cache) {
+            cache[symbol] = computeSupertypesMap(type, symbol)
         }
 
-        val resultTypes = cache[classId]?.getOrDefault(supertypeClassId, emptyList()) ?: return null
+        val resultTypes = cache[symbol]?.getOrDefault(supertypeConstructor, emptyList()) ?: return null
         if (type.typeArguments.isEmpty()) return resultTypes
 
         val substitutionSupertypePolicy = context.substitutionSupertypePolicy(type)
@@ -46,9 +44,9 @@ class FirCorrespondingSupertypesCache(session: FirSession) {
 
     private fun computeSupertypesMap(
         subtype: ConeLookupTagBasedType,
-        subtypeClassId: ClassId
-    ): Map<ClassId, List<ConeClassLikeType>>? {
-        val resultingMap = mutableMapOf<ClassId, List<ConeClassLikeType>>()
+        subtypeSymbol: ConeClassLikeSymbol
+    ): Map<ConeClassLikeSymbol, List<ConeClassLikeType>>? {
+        val resultingMap = mutableMapOf<ConeClassLikeSymbol, List<ConeClassLikeType>>()
 
         val subtypeClassSymbol = with(context) {
             subtype.typeConstructor() as? ConeClassLikeSymbol ?: return null
@@ -65,7 +63,7 @@ class FirCorrespondingSupertypesCache(session: FirSession) {
         if (context.anySupertype(
                 defaultType,
                 { it !is ConeClassLikeType }
-            ) { supertype -> computeSupertypePolicyAndPutInMap(supertype, subtypeClassId, resultingMap) }
+            ) { supertype -> computeSupertypePolicyAndPutInMap(supertype, subtypeSymbol, resultingMap) }
         ) {
             return null
         }
@@ -74,14 +72,14 @@ class FirCorrespondingSupertypesCache(session: FirSession) {
 
     private fun computeSupertypePolicyAndPutInMap(
         supertype: SimpleTypeMarker,
-        subtypeClassId: ClassId,
-        resultingMap: MutableMap<ClassId, List<ConeClassLikeType>>
+        subtypeSymbol: ConeClassLikeSymbol,
+        resultingMap: MutableMap<ConeClassLikeSymbol, List<ConeClassLikeType>>
     ): AbstractTypeCheckerContext.SupertypesPolicy {
-        val anotherClassId = (supertype as ConeClassLikeType).lookupTag.classId
+        val supertypeSymbol = (supertype as ConeClassLikeType).lookupTag.toSymbol(session) as ConeClassLikeSymbol
         val captured = context.captureFromArguments(supertype, CaptureStatus.FOR_SUBTYPING) as ConeClassLikeType? ?: supertype
 
-        if (anotherClassId != subtypeClassId) {
-            resultingMap[anotherClassId] = listOf(captured)
+        if (supertypeSymbol != subtypeSymbol) {
+            resultingMap[supertypeSymbol] = listOf(captured)
         }
 
         return when {
