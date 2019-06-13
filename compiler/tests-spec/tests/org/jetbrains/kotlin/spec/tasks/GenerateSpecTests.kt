@@ -98,7 +98,7 @@ object TestsMapGenerator {
 
             if (specTest is LinkedSpecTest) {
                 val testReferences = createObjectsPath(specTest, testsMap)
-                testReferences.testNumber += specTest.testNumber
+                testReferences.testNumber++
                 appendRelevantTests(specTest, testsMap)
             }
         }
