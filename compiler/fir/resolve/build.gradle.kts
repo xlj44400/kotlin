@@ -11,6 +11,7 @@ dependencies {
     compile(project(":compiler:fir:tree"))
 
     compileOnly(intellijCoreDep()) { includeJars("intellij-core", "guava", rootProject = rootProject) }
+    compileOnly(intellijDep()) { includeJars("trove4j", rootProject = rootProject) }
 
     testCompileOnly(intellijDep()) { includeJars("openapi", "java-api", "idea", "idea_rt", "util", "asm-all", "extensions", rootProject = rootProject) }
 
