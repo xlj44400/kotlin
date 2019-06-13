@@ -4,7 +4,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 11 -> sentence 1
+ * PLACE: expressions, when-expression -> paragraph 11 -> sentence 1
  * NUMBER: 2
  * DESCRIPTION: Checking for not exhaustive when with bound value when there is no else branch.
  */

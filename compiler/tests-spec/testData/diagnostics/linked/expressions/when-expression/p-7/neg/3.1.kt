@@ -3,7 +3,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 7 -> sentence 3
+ * PLACE: expressions, when-expression -> paragraph 7 -> sentence 3
  * NUMBER: 1
  * DESCRIPTION: 'When' with bound value and 'when condition' with range expression, but without containment checking operator.
  * HELPERS: typesProvider

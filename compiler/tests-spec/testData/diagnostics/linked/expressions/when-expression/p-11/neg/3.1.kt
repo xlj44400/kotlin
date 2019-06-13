@@ -4,7 +4,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 11 -> sentence 3
+ * PLACE: expressions, when-expression -> paragraph 11 -> sentence 3
  * NUMBER: 1
  * DESCRIPTION: Checking for not exhaustive 'when' when not contains by all Boolean values or 'when' does not have bound value.
  */

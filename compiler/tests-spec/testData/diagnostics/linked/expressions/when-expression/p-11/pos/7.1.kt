@@ -3,7 +3,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 11 -> sentence 7
+ * PLACE: expressions, when-expression -> paragraph 11 -> sentence 7
  * NUMBER: 1
  * DESCRIPTION: Check when exhaustive when all enumerated values are checked.
  * HELPERS: enumClasses

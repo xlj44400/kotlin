@@ -8,6 +8,7 @@
  *
  * SPEC VERSION: 0.1-draft
  * PLACE: type-system, introduction -> paragraph 7 -> sentence 1
+ * RELEVANT PLACES: expressions, constant-literals, real-literals -> paragraph 1 -> sentence 1
  * NUMBER: 1
  * DESCRIPTION: The use of Boolean literals as the identifier (with backtick) in the class.
  */

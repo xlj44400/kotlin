@@ -2,7 +2,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: constant-literals, integer-literals, decimal-integer-literals -> paragraph 1 -> sentence 2
+ * PLACE: expressions, constant-literals, integer-literals, decimal-integer-literals -> paragraph 1 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: Integer literals with an underscore in the last position.
  */

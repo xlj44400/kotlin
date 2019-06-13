@@ -3,7 +3,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (POSITIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 3 -> sentence 2
+ * PLACE: expressions, when-expression -> paragraph 3 -> sentence 2
  * NUMBER: 1
  * DESCRIPTION: 'When' without bound value and different variants of the boolean conditions (logical, equality, comparison, type checking operator, containment operator).
  * HELPERS: typesProvider, enumClasses, sealedClasses, classes

@@ -2,7 +2,7 @@
  * KOTLIN DIAGNOSTICS SPEC TEST (NEGATIVE)
  *
  * SPEC VERSION: 0.1-draft
- * PLACE: when-expression -> paragraph 7 -> sentence 5
+ * PLACE: expressions, when-expression -> paragraph 7 -> sentence 5
  * NUMBER: 2
  * DESCRIPTION: 'When' with bound value and not allowed break and continue expression (without labels) in 'when condition'.
  */
