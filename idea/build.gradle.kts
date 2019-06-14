@@ -100,6 +100,10 @@ dependencies {
     compileOnly(project(":kotlin-daemon-client"))
 
     compileOnly(intellijDep())
+    Platform[192].orHigher {
+        compileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl") }
+    }
+
     compileOnly(commonDep("org.jetbrains", "markdown"))
     compileOnly(commonDep("com.google.code.findbugs", "jsr305"))
     compileOnly(intellijPluginDep("IntelliLang"))
@@ -127,6 +131,8 @@ dependencies {
     testRuntime(project(":kotlin-preloader"))
 
     testCompile(project(":kotlin-sam-with-receiver-compiler-plugin")) { isTransitive = false }
+
+    testRuntime(intellijCoreDep()) { includeJars("intellij-core") }
 
     testRuntime(project(":plugins:android-extensions-compiler"))
     testRuntimeOnly(project(":kotlin-android-extensions-runtime")) // TODO: fix import (workaround for jps build)
@@ -157,6 +163,7 @@ dependencies {
     testCompile(intellijPluginDep("stream-debugger"))
     testCompileOnly(intellijDep())
     testCompileOnly(commonDep("com.google.code.findbugs", "jsr305"))
+    testCompileOnly(intellijPluginDep("java"))
     testCompileOnly(intellijPluginDep("gradle"))
     testCompileOnly(intellijPluginDep("Groovy"))
 
@@ -166,6 +173,12 @@ dependencies {
     }
 
     testRuntime(intellijPluginDep("junit"))
+    Platform[192].orHigher {
+        testRuntime(intellijPluginDep("java")) { includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl") }
+    }
+//    testRuntime(intellijPluginDep("stats-collector"))
+//    testRuntime(intellijPluginDep("settings-repository"))
+//    testRuntime(intellijPluginDep("git4idea"))
     testRuntime(intellijPluginDep("gradle"))
     testRuntime(intellijPluginDep("Groovy"))
     testRuntime(intellijPluginDep("coverage"))

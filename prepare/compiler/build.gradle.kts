@@ -76,10 +76,6 @@ dependencies {
     } else {
         fatJarContents(intellijDep()) { includeJars("lz4-1.3.0") }
     }
-    
-    if (Platform.P183.orHigher()) {
-        fatJarContents(intellijCoreDep()) { includeJars("java-compatibility-1.0.1") }
-    }
 
     fatJarContents(intellijDep()) {
         includeIntellijCoreJarDependencies(project) {

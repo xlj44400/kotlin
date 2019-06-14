@@ -67,7 +67,7 @@ enum class Ide(val platform: Platform) : CompatibilityPredicate {
     }
 }
 
-val Platform.orHigher get() = object : CompatibilityPredicate {
+val Platform.orHigher: CompatibilityPredicate get() = object : CompatibilityPredicate {
     override fun matches(ide: Ide) = ide.platform.version >= version
 }
 

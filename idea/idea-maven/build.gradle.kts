@@ -19,6 +19,10 @@ dependencies {
     compile(project(":idea:idea-jps-common"))
 
     compileOnly(intellijDep())
+    Platform[192].orHigher {
+        compileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl") }
+    }
+    
     excludeInAndroidStudio(rootProject) { compileOnly(intellijPluginDep("maven")) }
 
     testCompile(projectTests(":idea"))

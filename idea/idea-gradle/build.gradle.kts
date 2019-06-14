@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
     testRuntime(intellijDep())
-
+    
     compileOnly(project(":idea"))
     compileOnly(project(":idea:idea-jvm"))
     compileOnly(project(":idea:idea-native")) { isTransitive = false }
@@ -21,6 +21,18 @@ dependencies {
     compileOnly(intellijPluginDep("Groovy"))
     compileOnly(intellijPluginDep("junit"))
     compileOnly(intellijPluginDep("testng"))
+
+    Platform[192].orHigher {
+        compileOnly(intellijPluginDep("java")) {
+            includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl")
+        }
+    }
+
+    Platform[192].orHigher {
+        testRuntime(intellijPluginDep("java")) {
+            includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl")
+        }
+    }
 
     testCompile(projectTests(":idea"))
     testCompile(projectTests(":idea:idea-test-framework"))

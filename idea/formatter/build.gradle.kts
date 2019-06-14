@@ -8,6 +8,7 @@ dependencies {
     compile(project(":compiler:util"))
     compile(project(":compiler:frontend"))
     compileOnly(intellijDep())
+    compileOnly(intellijCoreDep()) { includeJars("intellij-core") }
 }
 
 sourceSets {

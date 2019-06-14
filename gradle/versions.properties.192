@@ -1,4 +1,4 @@
-versions.intellijSdk=192.4205.45-EAP-SNAPSHOT
+versions.intellijSdk=192.4787.16-EAP-SNAPSHOT
 versions.androidBuildTools=r23.0.1
 versions.idea.NodeJS=181.3494.12
 versions.jar.asm-all=7.0.1
