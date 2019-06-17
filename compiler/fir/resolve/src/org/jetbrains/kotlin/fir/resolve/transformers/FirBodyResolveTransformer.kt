@@ -204,7 +204,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         access.resultType = typeFromCallee(access)
     }
 
-    private fun <T> typeFromCallee(access: T): FirResolvedTypeRef where T : FirQualifiedAccess, T : FirExpression {
+    private fun <T> typeFromCallee(access: T): FirResolvedTypeRef where T : FirQualifiedAccess {
         return when (val newCallee = access.calleeReference) {
             is FirErrorNamedReference ->
                 FirErrorTypeRefImpl(session, access.psi, newCallee.errorReason)
@@ -409,7 +409,9 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         data: Any?
     ): CompositeTransformResult<FirStatement> {
         val variableAssignment = variableAssignment.transformRValue(this, null)
-        return transformCallee(variableAssignment).compose()
+
+        val resolvedAssignment = transformCallee(variableAssignment) as FirVariableAssignment
+        return completeTypeInference(resolvedAssignment, null).compose()
     }
 
     override fun transformAnonymousFunction(anonymousFunction: FirAnonymousFunction, data: Any?): CompositeTransformResult<FirDeclaration> {
@@ -598,13 +600,15 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
 
     data class LambdaResolution(val expectedReturnTypeRef: FirResolvedTypeRef?)
 
-    private fun completeTypeInference(functionCall: FirFunctionCall, expectedTypeRef: FirTypeRef?): FirFunctionCall {
-        val typeRef = typeFromCallee(functionCall)
+    private fun <T : FirQualifiedAccess> completeTypeInference(qualifiedAccess: T, expectedTypeRef: FirTypeRef?): T {
+        val typeRef = typeFromCallee(qualifiedAccess)
         if (typeRef.type is ConeKotlinErrorType) {
-            functionCall.resultType = typeRef
-            return functionCall
+            if (qualifiedAccess is FirExpression) {
+                qualifiedAccess.resultType = typeRef
+            }
+            return qualifiedAccess
         }
-        val candidate = functionCall.candidate() ?: return functionCall
+        val candidate = qualifiedAccess.candidate() ?: return qualifiedAccess
         val initialSubstitutor = candidate.substitutor
 
         val initialType = initialSubstitutor.substituteOrSelf(typeRef.type)
@@ -658,7 +662,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
 
         }, { it.resultType }, inferenceComponents)
 
-        completer.complete(candidate.system.asConstraintSystemCompleterContext(), completionMode, listOf(functionCall), initialType) {
+        completer.complete(candidate.system.asConstraintSystemCompleterContext(), completionMode, listOf(qualifiedAccess), initialType) {
             analyzer.analyze(
                 candidate.system.asPostponedArgumentsAnalyzerContext(),
                 it
@@ -666,18 +670,18 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
             )
         }
 
-        functionCall.transformChildren(ReplaceInArguments, replacements.toMap())
+        qualifiedAccess.transformChildren(ReplaceInArguments, replacements.toMap())
 
 
         if (completionMode == KotlinConstraintSystemCompleter.ConstraintSystemCompletionMode.FULL) {
             val finalSubstitutor =
                 candidate.system.asReadOnlyStorage().buildAbstractResultingSubstitutor(inferenceComponents.ctx) as ConeSubstitutor
-            return functionCall.transformSingle(
+            return qualifiedAccess.transformSingle(
                 FirCallCompleterTransformer(session, finalSubstitutor, jump),
                 null
             )
         }
-        return functionCall
+        return qualifiedAccess
     }
 
     override fun transformTryExpression(tryExpression: FirTryExpression, data: Any?): CompositeTransformResult<FirStatement> {
