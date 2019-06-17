@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirProperty
 import org.jetbrains.kotlin.fir.declarations.FirPropertyAccessor
 import org.jetbrains.kotlin.fir.expressions.FirExpression
+import org.jetbrains.kotlin.fir.symbols.impl.FirBackingFieldSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.transformSingle
 import org.jetbrains.kotlin.fir.types.FirTypeRef
@@ -41,17 +42,24 @@ class FirMemberPropertyImpl(
 ) : FirAbstractCallableMember(
     session, psi, name, visibility, modality, isExpect, isActual, isOverride, receiverTypeRef, returnTypeRef
 ), FirProperty {
+    override val backingFieldSymbol = FirBackingFieldSymbol(symbol.callableId)
+
     init {
         symbol.bind(this)
+        backingFieldSymbol.bind(this)
         status.isConst = isConst
         status.isLateInit = isLateInit
+    }
+
+    override fun <D> transformInitializerAndDelegate(transformer: FirTransformer<D>, data: D) {
+        initializer = initializer?.transformSingle(transformer, data)
+        delegate = delegate?.transformSingle(transformer, data)
     }
 
     override fun <D> transformChildren(transformer: FirTransformer<D>, data: D): FirElement {
         getter = getter.transformSingle(transformer, data)
         setter = setter?.transformSingle(transformer, data)
-        initializer = initializer?.transformSingle(transformer, data)
-        delegate = delegate?.transformSingle(transformer, data)
+        transformInitializerAndDelegate(transformer, data)
 
         return super<FirAbstractCallableMember>.transformChildren(transformer, data)
     }
