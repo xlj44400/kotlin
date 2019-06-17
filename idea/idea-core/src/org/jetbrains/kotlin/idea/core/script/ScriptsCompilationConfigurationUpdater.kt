@@ -193,11 +193,6 @@ class ScriptsCompilationConfigurationUpdater(
         fun areDependenciesCached(file: KtFile): Boolean {
             return getInstance(file.project).areDependenciesCached(file.virtualFile)
         }
-
-        fun isAsyncDependencyResolver(file: KtFile): Boolean {
-            val scriptDefinition = file.virtualFile.findScriptDefinition(file.project) ?: return false
-            return getInstance(file.project).isAsyncDependencyResolver(scriptDefinition)
-        }
     }
 }
 
