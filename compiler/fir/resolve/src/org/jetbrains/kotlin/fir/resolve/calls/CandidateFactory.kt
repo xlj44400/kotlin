@@ -48,9 +48,9 @@ fun PostponedArgumentsAnalyzer.Context.addSubsystemFromExpression(expression: Fi
 }
 
 internal fun FirQualifiedAccess.candidate(): Candidate? {
-    if (this is FirVariableAssignment) {
-        return (this.rValue as? FirQualifiedAccess)?.candidate()
-    }
+//    if (this is FirVariableAssignment) {
+//        return (this.rValue as? FirQualifiedAccess)?.candidate()
+//    }
     return when (val callee = this.calleeReference) {
         is FirNamedReferenceWithCandidate -> return callee.candidate
         else -> null
