@@ -11,17 +11,19 @@ import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.*
 import com.intellij.openapi.roots.libraries.Library
-import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptAdditionalIdeaDependenciesProvider
 import org.jetbrains.kotlin.idea.core.script.scriptRelatedModuleName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ScratchAdditionalIdeaDependenciesProvider : ScriptAdditionalIdeaDependenciesProvider() {
 
-    override fun getRelatedModules(file: VirtualFile, project: Project): List<Module> {
-        if (!ScratchFileService.isInScratchRoot(file)) return emptyList()
+    override fun getRelatedModules(file: KtFile, project: Project): List<Module> {
+        val virtualFile = file.virtualFile ?: file.originalFile.virtualFile ?: return emptyList()
 
-        val scratchModule = file.scriptRelatedModuleName?.let {
+        if (!ScratchFileService.isInScratchRoot(virtualFile)) return emptyList()
+
+        val scratchModule = virtualFile.scriptRelatedModuleName?.let {
             ModuleManager.getInstance(project).findModuleByName(it)
         } ?: return emptyList()
 
@@ -36,9 +38,7 @@ class ScratchAdditionalIdeaDependenciesProvider : ScriptAdditionalIdeaDependenci
         return modules.toList()
     }
 
-    override fun getRelatedLibraries(file: VirtualFile, project: Project): List<Library> {
-        if (!ScratchFileService.isInScratchRoot(file)) return emptyList()
-
+    override fun getRelatedLibraries(file: KtFile, project: Project): List<Library> {
         val result = linkedSetOf<Library>()
         getRelatedModules(file, project).forEach {
             moduleDependencyEnumerator(it).withoutDepModules().forEach { orderEntry ->

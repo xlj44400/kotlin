@@ -10,12 +10,13 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.progress.util.BackgroundTaskUtil
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import kotlinx.coroutines.Runnable
 import org.jetbrains.kotlin.idea.core.script.ScriptsCompilationConfigurationUpdater
 import org.jetbrains.kotlin.idea.core.script.settings.KotlinScriptingSettings
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
-import org.jetbrains.kotlin.scripting.resolve.VirtualFileScriptSource
+import org.jetbrains.kotlin.scripting.resolve.KtFileScriptSource
 import org.jetbrains.kotlin.scripting.resolve.refineScriptCompilationConfiguration
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -28,12 +29,12 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     private var notifyRootChange: Boolean = false
     private var backgroundTasksQueue: LoaderBackgroundTask? = null
 
-    override fun isApplicable(file: VirtualFile): Boolean {
-        val scriptDefinition = file.findScriptDefinition(project) ?: return false
+    override fun isApplicable(file: PsiFile): Boolean {
+        val scriptDefinition = file.findScriptDefinition() ?: return false
         return ScriptsCompilationConfigurationUpdater.getInstance(project).isAsyncDependencyResolver(scriptDefinition)
     }
 
-    override fun loadDependencies(file: VirtualFile) {
+    override fun loadDependencies(file: KtFile) {
         lock.write {
             if (backgroundTasksQueue == null) {
                 backgroundTasksQueue = LoaderBackgroundTask()
@@ -69,12 +70,12 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         return false
     }
 
-    private fun runDependenciesUpdate(file: VirtualFile) {
-        val scriptDef = file.findScriptDefinition(project) ?: return
+    private fun runDependenciesUpdate(file: KtFile) {
+        val scriptDef = file.findScriptDefinition() ?: return
 
         debug(file) { "start async dependencies loading" }
 
-        val result = refineScriptCompilationConfiguration(VirtualFileScriptSource(file), scriptDef, project)
+        val result = refineScriptCompilationConfiguration(KtFileScriptSource(file), scriptDef, project)
 
         debug(file) { "finish async dependencies loading" }
 
@@ -82,7 +83,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     }
 
     private inner class LoaderBackgroundTask {
-        private val sequenceOfFiles: ConcurrentLinkedQueue<VirtualFile> = ConcurrentLinkedQueue()
+        private val sequenceOfFiles: ConcurrentLinkedQueue<KtFile> = ConcurrentLinkedQueue()
         private var forceStop : Boolean = false
         private var startedSilently : Boolean = false
 
@@ -119,7 +120,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
             }.queue()
         }
 
-        fun addTask(file: VirtualFile) {
+        fun addTask(file: KtFile) {
             if (sequenceOfFiles.contains(file)) return
 
             debug(file) { "added to update queue" }

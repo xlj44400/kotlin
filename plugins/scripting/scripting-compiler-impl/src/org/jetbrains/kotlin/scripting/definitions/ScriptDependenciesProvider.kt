@@ -21,12 +21,12 @@ interface ScriptDependenciesProvider {
 
     @Deprecated("Migrating to configuration refinement", level = DeprecationLevel.ERROR)
     fun getScriptDependencies(file: PsiFile): ScriptDependencies? =
-        getScriptConfigurationResult(file.virtualFile ?: file.originalFile.virtualFile)?.valueOrNull()?.legacyDependencies
+        getScriptConfigurationResult(file)?.valueOrNull()?.legacyDependencies
 
+    @Deprecated("Use getScriptConfigurationResult(PsiFile) instead")
     fun getScriptConfigurationResult(file: VirtualFile): ScriptCompilationConfigurationResult? = null
 
-    fun getScriptConfigurationResult(file: PsiFile): ScriptCompilationConfigurationResult? =
-        getScriptConfigurationResult(file.virtualFile ?: file.originalFile.virtualFile)
+    fun getScriptConfigurationResult(file: PsiFile): ScriptCompilationConfigurationResult? = null
 
     companion object {
         fun getInstance(project: Project): ScriptDependenciesProvider? =

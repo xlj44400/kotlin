@@ -6,22 +6,23 @@
 package org.jetbrains.kotlin.idea.core.script.dependencies
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.idea.core.script.ScriptsCompilationConfigurationUpdater
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
-import org.jetbrains.kotlin.scripting.resolve.VirtualFileScriptSource
+import org.jetbrains.kotlin.scripting.resolve.KtFileScriptSource
 import org.jetbrains.kotlin.scripting.resolve.refineScriptCompilationConfiguration
 
 class SyncScriptDependenciesLoader(project: Project) : ScriptDependenciesLoader(project) {
-    override fun isApplicable(file: VirtualFile): Boolean {
-        val scriptDefinition = file.findScriptDefinition(project) ?: return false
+    override fun isApplicable(file: PsiFile): Boolean {
+        val scriptDefinition = file.findScriptDefinition() ?: return false
         return !ScriptsCompilationConfigurationUpdater.getInstance(project).isAsyncDependencyResolver(scriptDefinition)
     }
 
-    override fun loadDependencies(file: VirtualFile) {
-        val scriptDef = file.findScriptDefinition(project) ?: return
+    override fun loadDependencies(file: KtFile) {
+        val scriptDef = file.findScriptDefinition() ?: return
         debug(file) { "start sync dependencies loading" }
-        val result = refineScriptCompilationConfiguration(VirtualFileScriptSource(file), scriptDef, project)
+        val result = refineScriptCompilationConfiguration(KtFileScriptSource(file), scriptDef, project)
         debug(file) { "finish sync dependencies loading" }
         processRefinedConfiguration(result, file)
     }

@@ -7,7 +7,6 @@ package org.jetbrains.kotlin.idea.caches.project
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesManager
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptAdditionalIdeaDependenciesProvider
@@ -16,13 +15,14 @@ import org.jetbrains.kotlin.idea.stubindex.KotlinSourceFilterScope
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.PlatformDependentAnalyzerServices
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatformAnalyzerServices
 import org.jetbrains.kotlin.scripting.definitions.ScriptDefinition
 
 data class ScriptModuleInfo(
     val project: Project,
-    val scriptFile: VirtualFile,
+    val scriptFile: KtFile,
     val scriptDefinition: ScriptDefinition
 ) : IdeaModuleInfo {
     override val moduleOrigin: ModuleOrigin
@@ -30,7 +30,7 @@ data class ScriptModuleInfo(
 
     override val name: Name = Name.special("<script ${scriptFile.name} ${scriptDefinition.name}>")
 
-    override fun contentScope() = GlobalSearchScope.fileScope(project, scriptFile)
+    override fun contentScope() = GlobalSearchScope.fileScope(project, scriptFile.virtualFile)
 
     override fun dependencies(): List<IdeaModuleInfo> {
         return arrayListOf<IdeaModuleInfo>(this).apply {
@@ -85,7 +85,7 @@ sealed class ScriptDependenciesInfo(val project: Project) : IdeaModuleInfo, Bina
 
     class ForFile(
         project: Project,
-        val scriptFile: VirtualFile,
+        val scriptFile: KtFile,
         val scriptDefinition: ScriptDefinition
     ) : ScriptDependenciesInfo(project) {
         override val sdk: Sdk?

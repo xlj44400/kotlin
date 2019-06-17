@@ -12,9 +12,10 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ex.ProjectRootManagerEx
 import com.intellij.openapi.util.EmptyRunnable
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
 import org.jetbrains.kotlin.idea.core.script.*
 import org.jetbrains.kotlin.idea.util.application.runWriteAction
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.resolve.ScriptCompilationConfigurationResult
 import org.jetbrains.kotlin.scripting.resolve.ScriptCompilationConfigurationWrapper
 import org.jetbrains.kotlin.scripting.resolve.ScriptReportSink
@@ -25,8 +26,8 @@ import kotlin.script.experimental.jvm.compat.mapToLegacyReports
 // TODO: rename and provide alias for compatibility - this is not only about dependencies anymore
 abstract class ScriptDependenciesLoader(protected val project: Project) {
 
-    abstract fun isApplicable(file: VirtualFile): Boolean
-    abstract fun loadDependencies(file: VirtualFile)
+    abstract fun isApplicable(file: PsiFile): Boolean
+    abstract fun loadDependencies(file: KtFile)
 
     protected abstract fun shouldShowNotification(): Boolean
 
@@ -36,7 +37,7 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
 
     private val reporter: ScriptReportSink = ServiceManager.getService(project, ScriptReportSink::class.java)
 
-    protected fun processRefinedConfiguration(result: ScriptCompilationConfigurationResult, file: VirtualFile) {
+    protected fun processRefinedConfiguration(result: ScriptCompilationConfigurationResult, file: KtFile) {
         debug(file) { "refined script compilation configuration from ${this.javaClass} received = $result" }
 
         val oldResult = cache[file]
@@ -73,13 +74,13 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
         }
     }
 
-    private fun attachReportsIfChanged(result: ResultWithDiagnostics<*>, file: VirtualFile) {
+    private fun attachReportsIfChanged(result: ResultWithDiagnostics<*>, file: KtFile) {
         if (file.getUserData(IdeScriptReportSink.Reports) != result.reports.takeIf { it.isNotEmpty() }) {
             reporter.attachReports(file, result.reports.mapToLegacyReports())
         }
     }
 
-    private fun save(compilationConfigurationResult: ScriptCompilationConfigurationResult?, file: VirtualFile) {
+    private fun save(compilationConfigurationResult: ScriptCompilationConfigurationResult?, file: KtFile) {
         if (shouldShowNotification()) {
             file.removeScriptDependenciesNotificationPanel(project)
         }
@@ -89,7 +90,7 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
     }
 
     protected fun saveToCache(
-        file: VirtualFile, compilationConfigurationResult: ScriptCompilationConfigurationResult, skipSaveToAttributes: Boolean = false
+        file: KtFile, compilationConfigurationResult: ScriptCompilationConfigurationResult, skipSaveToAttributes: Boolean = false
     ) {
         val rootsChanged = compilationConfigurationResult.valueOrNull()?.let { cache.hasNotCachedRoots(it) } ?: false
         if (cache.save(file, compilationConfigurationResult)
@@ -140,9 +141,10 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
     companion object {
         private val LOG = Logger.getInstance("#org.jetbrains.kotlin.idea.script")
 
-        internal fun debug(file: VirtualFile? = null, message: () -> String) {
+        internal fun debug(file: KtFile? = null, message: () -> String) {
             if (LOG.isDebugEnabled) {
-                LOG.debug("[KOTLIN SCRIPT] " + (file?.let { "file = ${file.path}, " } ?: "") + message())
+                val fileName = (file?.virtualFile ?: file?.originalFile?.virtualFile)?.path ?: ""
+                LOG.debug("[KOTLIN SCRIPT] $fileName " + message())
             }
         }
     }

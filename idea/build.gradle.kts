@@ -10,10 +10,10 @@ repositories {
 sourceSets {
     "main" {
         projectDefault()
-        java.srcDirs(
+        java.srcDirs( 
             "idea-completion/src",
             "idea-live-templates/src",
-            "idea-repl/src"
+            "idea-repl/src" 
         )
         resources.srcDirs(
             "idea-completion/resources",

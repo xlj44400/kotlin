@@ -175,7 +175,7 @@ private fun <T> PsiElement.collectInfos(c: ModuleInfoCollector<T>): T {
         }
         containingKtFile.script?.let {
             val definition = findScriptDefinitionByFileName(project, containingKtFile.name)
-            return c.onResult(ScriptModuleInfo(project, virtualFile, definition))
+            return c.onResult(ScriptModuleInfo(project, containingKtFile, definition))
         }
     }
 

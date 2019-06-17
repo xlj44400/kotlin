@@ -29,6 +29,7 @@ fun PsiFile.findScriptDefinition(): ScriptDefinition? {
     return findScriptDefinitionByFileName(project, file.name)
 }
 
+@Deprecated("Use PsiFile.findScriptDefinition() instead")
 fun VirtualFile.findScriptDefinition(project: Project): ScriptDefinition? {
     if (!isValid || isNonScript()) return null
     // Do not use psiFile.script here because this method can be called during indexes access

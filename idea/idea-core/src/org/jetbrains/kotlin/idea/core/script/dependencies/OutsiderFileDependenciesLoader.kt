@@ -6,19 +6,25 @@
 package org.jetbrains.kotlin.idea.core.script.dependencies
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesManager
 import org.jetbrains.kotlin.idea.highlighter.OutsidersPsiFileSupportUtils
 import org.jetbrains.kotlin.idea.highlighter.OutsidersPsiFileSupportWrapper
+import org.jetbrains.kotlin.psi.KtFile
 
 class OutsiderFileDependenciesLoader(project: Project) : ScriptDependenciesLoader(project) {
-    override fun isApplicable(file: VirtualFile): Boolean {
-        return OutsidersPsiFileSupportWrapper.isOutsiderFile(file)
+    override fun isApplicable(file: PsiFile): Boolean {
+        val virtualFile = file.virtualFile ?: file.originalFile.virtualFile ?: return false
+        return OutsidersPsiFileSupportWrapper.isOutsiderFile(virtualFile)
     }
 
-    override fun loadDependencies(file: VirtualFile) {
-        val fileOrigin = OutsidersPsiFileSupportUtils.getOutsiderFileOrigin(project, file) ?: return
-        val compilationConfiguration = ScriptDependenciesManager.getInstance(project).getRefinedCompilationConfiguration(fileOrigin) ?: return
+    override fun loadDependencies(file: KtFile) {
+        val virtualFile = file.virtualFile ?: file.originalFile.virtualFile ?: return
+        val fileOrigin = OutsidersPsiFileSupportUtils.getOutsiderFileOrigin(project, virtualFile) ?: return
+        val psiFileOrigin = PsiManager.getInstance(project).findFile(fileOrigin) as? KtFile ?: return
+        val compilationConfiguration =
+            ScriptDependenciesManager.getInstance(project).getRefinedCompilationConfiguration(psiFileOrigin) ?: return
         saveToCache(file, compilationConfiguration)
     }
 

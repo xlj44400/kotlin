@@ -91,9 +91,9 @@ abstract class AbstractScratchRunActionTest : FileEditorManagerTestCase() {
 
         val scratchFile = createScratchFile(sourceFile.name, fileText)
 
-        ScriptDependenciesManager.updateScriptDependenciesSynchronously(scratchFile, project)
-
         val psiFile = PsiManager.getInstance(project).findFile(scratchFile) ?: error("Couldn't find psi file ${sourceFile.path}")
+
+        ScriptDependenciesManager.updateScriptDependenciesSynchronously(psiFile, project)
 
         if (!KotlinHighlightingUtil.shouldHighlight(psiFile)) error("Highlighting for scratch file is switched off")
 
