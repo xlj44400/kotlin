@@ -409,10 +409,10 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         variableAssignment: FirVariableAssignment,
         data: Any?
     ): CompositeTransformResult<FirStatement> {
-        val variableAssignment = variableAssignment.transformRValue(this, null)
-
         val resolvedAssignment = transformCallee(variableAssignment) as FirVariableAssignment
-        return completeTypeInference(resolvedAssignment, null).compose()
+        val completeAssignment = completeTypeInference(resolvedAssignment, noExpectedType)
+        val expectedType = typeFromCallee(completeAssignment)
+        return completeAssignment.transformRValue(this, expectedType).compose()
     }
 
     override fun transformAnonymousFunction(anonymousFunction: FirAnonymousFunction, data: Any?): CompositeTransformResult<FirDeclaration> {
