@@ -327,7 +327,9 @@ private fun KotlinFacetSettings.writeLatestConfig(element: Element) {
     if (externalProjectId.isNotEmpty()) {
         element.setAttribute("externalProjectId", externalProjectId)
     }
-    element.setAttribute("isHmppProject", isHmppEnabled.toString())
+    if (isHmppEnabled) {
+        element.setAttribute("isHmppProject", isHmppEnabled.toString())
+    }
     productionOutputPath?.let {
         if (it != (compilerArguments as? K2JSCompilerArguments)?.outputFile) {
             element.addContent(Element("productionOutputPath").apply { addContent(PathUtil.toSystemIndependentName(it)) })
