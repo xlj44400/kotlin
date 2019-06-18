@@ -70,6 +70,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
     private var primaryConstructorParametersScope: FirLocalScope? = null
 
     override fun transformConstructor(constructor: FirConstructor, data: Any?): CompositeTransformResult<FirDeclaration> {
+        if (implicitTypeOnly) return constructor.compose()
         if (constructor.isPrimary) {
             primaryConstructorParametersScope = FirLocalScope().apply {
                 constructor.valueParameters.forEach { this.storeDeclaration(it) }
@@ -82,6 +83,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         anonymousInitializer: FirAnonymousInitializer,
         data: Any?
     ): CompositeTransformResult<FirDeclaration> {
+        if (implicitTypeOnly) return anonymousInitializer.compose()
         return withScopeCleanup(localScopes) {
             localScopes.addIfNotNull(primaryConstructorParametersScope)
             super.transformAnonymousInitializer(anonymousInitializer, data)
@@ -101,7 +103,6 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
             super.transformFunction(function, data)
         }
     }
-
 
     override fun transformValueParameter(valueParameter: FirValueParameter, data: Any?): CompositeTransformResult<FirDeclaration> {
         localScopes.lastOrNull()?.storeDeclaration(valueParameter)
@@ -238,6 +239,12 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
                 } else {
                     error("WTF ! $symbol")
                 }
+            }
+            is FirThisReference -> {
+                val labelName = newCallee.labelName
+                val types = if (labelName == null) labels.values() else labels[Name.identifier(labelName)]
+                val type = types.lastOrNull() ?: ConeKotlinErrorType("Unresolved this@$labelName")
+                FirResolvedTypeRefImpl(session, null, type, emptyList())
             }
             else -> error("Failed to extract type from: $newCallee")
         }
@@ -648,16 +655,18 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
                     else -> null
                 }
 
+
+                val expectedReturnTypeRef = expectedReturnType?.let { lambdaArgument.returnTypeRef.resolvedTypeFromPrototype(it) }
+
                 val newLambdaExpression = lambdaArgument.copy(
                     receiverTypeRef = receiverType?.let { lambdaArgument.receiverTypeRef!!.resolvedTypeFromPrototype(it) },
                     valueParameters = lambdaArgument.valueParameters.mapIndexed { index, parameter ->
                         parameter.transformReturnTypeRef(StoreType, parameter.returnTypeRef.resolvedTypeFromPrototype(parameters[index]))
                         parameter
                     } + listOfNotNull(itParam),
-                    returnTypeRef = lambdaArgument.returnTypeRef.resolvedTypeFromPrototype(rawReturnType)
+                    returnTypeRef = expectedReturnTypeRef ?: noExpectedType
                 )
 
-                val expectedReturnTypeRef = expectedReturnType?.let { newLambdaExpression.returnTypeRef.resolvedTypeFromPrototype(it) }
                 replacements[lambdaArgument] =
                     newLambdaExpression.transformSingle(this@FirBodyResolveTransformer, LambdaResolution(expectedReturnTypeRef))
 
