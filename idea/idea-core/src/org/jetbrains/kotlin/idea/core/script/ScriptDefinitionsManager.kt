@@ -20,6 +20,7 @@ import com.intellij.diagnostic.PluginException
 import com.intellij.execution.console.IdeConsoleRootType
 import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.ide.scratch.ScratchFileService
+import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -77,7 +78,27 @@ class ScriptDefinitionsManager(private val project: Project) : LazyScriptDefinit
         val cached = scriptDefinitionsCacheLock.write { scriptDefinitionsCache.get(fileName) }
         if (cached != null) return cached
 
-        val definition = super.findDefinition(fileName) ?: return null
+        if (ScratchFileService.getInstance().findFile(
+                ScratchRootType.getInstance(),
+                fileName,
+                ScratchFileService.Option.existing_only
+            ) != null
+        ) {
+            return getDefaultDefinition()
+        }
+
+        // Scratch should always have default script definition
+        val definition =
+            if (ScratchFileService.getInstance().findFile(
+                    ScratchRootType.getInstance(),
+                    fileName,
+                    ScratchFileService.Option.existing_only
+                ) == null
+            ) {
+                super.findDefinition(fileName) ?: return null
+            } else {
+                getDefaultDefinition()
+            }
 
         scriptDefinitionsCacheLock.write {
             scriptDefinitionsCache.put(fileName, definition)
