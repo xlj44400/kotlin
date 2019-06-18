@@ -9908,6 +9908,11 @@ public class FirDiagnosticsSmokeTestGenerated extends AbstractFirDiagnosticsSmok
                 runTest("compiler/testData/diagnostics/tests/inference/coercionToUnit/coercionToUnitForIfAsLastExpressionInLambda.kt");
             }
 
+            @TestMetadata("coercionToUnitForLastLambdaInLambda.kt")
+            public void testCoercionToUnitForLastLambdaInLambda() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/inference/coercionToUnit/coercionToUnitForLastLambdaInLambda.kt");
+            }
+
             @TestMetadata("coercionWithExpectedType.kt")
             public void testCoercionWithExpectedType() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/inference/coercionToUnit/coercionWithExpectedType.kt");
@@ -10004,6 +10009,11 @@ public class FirDiagnosticsSmokeTestGenerated extends AbstractFirDiagnosticsSmok
             @TestMetadata("nestedLambdas.kt")
             public void testNestedLambdas() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/inference/commonSystem/nestedLambdas.kt");
+            }
+
+            @TestMetadata("notEnoughInformationForComplexSelect.kt")
+            public void testNotEnoughInformationForComplexSelect() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/inference/commonSystem/notEnoughInformationForComplexSelect.kt");
             }
 
             @TestMetadata("selectFromCovariantAndContravariantTypes.kt")
