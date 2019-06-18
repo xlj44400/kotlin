@@ -10001,6 +10001,11 @@ public class FirDiagnosticsSmokeTestGenerated extends AbstractFirDiagnosticsSmok
                 runTest("compiler/testData/diagnostics/tests/inference/commonSystem/kt30300.kt");
             }
 
+            @TestMetadata("kt31969.kt")
+            public void testKt31969() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/inference/commonSystem/kt31969.kt");
+            }
+
             @TestMetadata("kt3372toCollection.kt")
             public void testKt3372toCollection() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/inference/commonSystem/kt3372toCollection.kt");
@@ -10011,9 +10016,14 @@ public class FirDiagnosticsSmokeTestGenerated extends AbstractFirDiagnosticsSmok
                 runTest("compiler/testData/diagnostics/tests/inference/commonSystem/nestedLambdas.kt");
             }
 
-            @TestMetadata("notEnoughInformationForComplexSelect.kt")
-            public void testNotEnoughInformationForComplexSelect() throws Exception {
-                runTest("compiler/testData/diagnostics/tests/inference/commonSystem/notEnoughInformationForComplexSelect.kt");
+            @TestMetadata("postponedCompletionWithExactAnnotation.kt")
+            public void testPostponedCompletionWithExactAnnotation() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/inference/commonSystem/postponedCompletionWithExactAnnotation.kt");
+            }
+
+            @TestMetadata("postponedCompletionWithExactAnnotation_ni.kt")
+            public void testPostponedCompletionWithExactAnnotation_ni() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/inference/commonSystem/postponedCompletionWithExactAnnotation_ni.kt");
             }
 
             @TestMetadata("selectFromCovariantAndContravariantTypes.kt")
