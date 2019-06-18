@@ -174,7 +174,7 @@ dependencies {
 
     testRuntime(intellijPluginDep("junit"))
     Platform[192].orHigher {
-        testRuntime(intellijPluginDep("java")) { includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl") }
+        testRuntime(intellijPluginDep("java"))
     }
 //    testRuntime(intellijPluginDep("stats-collector"))
 //    testRuntime(intellijPluginDep("settings-repository"))
