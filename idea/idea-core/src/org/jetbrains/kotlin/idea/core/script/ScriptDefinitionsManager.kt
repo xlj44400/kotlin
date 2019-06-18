@@ -16,7 +16,9 @@
 
 package org.jetbrains.kotlin.idea.core.script
 
+import com.intellij.diagnostic.PluginException
 import com.intellij.execution.console.IdeConsoleRootType
+import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.ide.scratch.ScratchFileService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runWriteAction
@@ -259,7 +261,13 @@ fun loadDefinitionsFromTemplates(
             LOG.warn("[kts] cannot load script definition class $templateClassName")
             null
         } catch (e: Throwable) {
-            LOG.error("[kts] cannot load script definition class $templateClassName", e)
+            // TODO discuss this
+            val thirdPartyPlugin = PluginManagerCore.getPluginByClassName(templateClassName)
+            if (thirdPartyPlugin != null) {
+                LOG.error(PluginException("[kts] cannot load script definition class $templateClassName", e, thirdPartyPlugin))
+            } else {
+                LOG.error("[kts] cannot load script definition class $templateClassName", e)
+            }
             null
         }
     }
