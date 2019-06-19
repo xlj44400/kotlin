@@ -29,9 +29,13 @@ dependencies {
     }
 
     Platform[192].orHigher {
-        testRuntime(intellijPluginDep("java")) {
+        testCompileOnly(intellijPluginDep("java")) {
             includeJars("java-api", "java-impl", "external-system-rt", "external-system-impl")
         }
+    }
+
+    Platform[192].orHigher {
+        testRuntime(intellijPluginDep("java"))
     }
 
     testCompile(projectTests(":idea"))
