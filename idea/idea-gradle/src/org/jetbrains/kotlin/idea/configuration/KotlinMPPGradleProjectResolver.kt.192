@@ -624,7 +624,7 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtension() {
                 //TODO after applying patch to IDEA core uncomment the following line:
                 // sourceSet.isTest = compilation.sourceSets.filter { isTestModule }.isNotEmpty()
                 // It will allow to get rid of hacks with guessing module type in DataServices and obtain properly set productionOnTest flags
-                val sourcesWithTypes = SmartList<kotlin.Pair<IExternalSystemSourceType, ExternalSourceDirectorySet>>()
+                val sourcesWithTypes = SmartList<kotlin.Pair<ExternalSystemSourceType, DefaultExternalSourceDirectorySet>>()
                 if (effectiveClassesDir != null) {
                     sourcesWithTypes += compilation.sourceType to DefaultExternalSourceDirectorySet().also { dirSet ->
                         dirSet.outputDir = effectiveClassesDir
@@ -641,7 +641,7 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtension() {
                         dirSet.setInheritedCompilerOutput(false)
                     }
                 }
-                sourceSet.sources = sourcesWithTypes.toMap()
+                sourceSet.setSources(sourcesWithTypes.toMap())
             }
         }
 
@@ -650,14 +650,14 @@ open class KotlinMPPGradleProjectResolver : AbstractProjectResolverExtension() {
                 sourceSet.name = ktSourceSet.name
                 sourceSet.targetCompatibility = ktSourceSetData.targetCompatibility
                 sourceSet.dependencies += ktSourceSet.dependencies
-                sourceSet.sources = linkedMapOf<IExternalSystemSourceType, ExternalSourceDirectorySet>(
+                sourceSet.setSources(linkedMapOf<ExternalSystemSourceType, DefaultExternalSourceDirectorySet>(
                     ktSourceSet.sourceType to DefaultExternalSourceDirectorySet().also { dirSet ->
                         dirSet.srcDirs = ktSourceSet.sourceDirs
                     },
                     ktSourceSet.resourceType to DefaultExternalSourceDirectorySet().also { dirSet ->
                         dirSet.srcDirs = ktSourceSet.resourceDirs
                     }
-                )
+                ))
             }
         }
 
