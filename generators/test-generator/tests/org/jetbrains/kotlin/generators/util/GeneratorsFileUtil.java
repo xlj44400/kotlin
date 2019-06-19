@@ -36,7 +36,7 @@ public class GeneratorsFileUtil {
 
     @SuppressWarnings("UseOfSystemOutOrSystemErr")
     public static void writeFileIfContentChanged(File file, String newText, boolean logNotChanged) throws IOException {
-        File parentFile = file.getParentFile();
+         File parentFile = file.getParentFile();
         if (!parentFile.exists()) {
             if (parentFile.mkdirs()) {
                 System.out.println("Directory created: " + parentFile.getAbsolutePath());

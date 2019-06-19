@@ -205,6 +205,8 @@ projectTest(taskName = "performanceTest") {
     }
 }
 
-testsJar {}
+testsJar {
+    from(sourceSets["performanceTest"].output)
+}
 
 configureFormInstrumentation()
