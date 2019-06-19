@@ -986,8 +986,7 @@ open class FirBodyResolveTransformer(val session: FirSession, val implicitTypeOn
         return withScopeCleanup(localScopes) {
             localScopes.addIfNotNull(primaryConstructorParametersScope)
             withContainer(property) {
-                property.acceptAnnotations(this, data)
-                property.transformInitializerAndDelegate(this, returnTypeRef)
+                property.transformChildrenWithoutAccessors(this, returnTypeRef)
                 storeVariableReturnType(property)
                 withScopeCleanup(localScopes) {
                     localScopes.add(FirLocalScope().apply {

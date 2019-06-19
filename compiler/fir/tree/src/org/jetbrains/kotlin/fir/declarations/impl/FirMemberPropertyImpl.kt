@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.fir.declarations.FirPropertyAccessor
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.symbols.impl.FirBackingFieldSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
+import org.jetbrains.kotlin.fir.transformInplace
 import org.jetbrains.kotlin.fir.transformSingle
 import org.jetbrains.kotlin.fir.types.FirTypeRef
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
@@ -51,16 +52,21 @@ class FirMemberPropertyImpl(
         status.isLateInit = isLateInit
     }
 
-    override fun <D> transformInitializerAndDelegate(transformer: FirTransformer<D>, data: D) {
+    override fun <D> transformChildrenWithoutAccessors(transformer: FirTransformer<D>, data: D) {
         initializer = initializer?.transformSingle(transformer, data)
         delegate = delegate?.transformSingle(transformer, data)
+        receiverTypeRef = receiverTypeRef?.transformSingle(transformer, data)
+        returnTypeRef = returnTypeRef.transformSingle(transformer, data)
+        typeParameters.transformInplace(transformer, data)
+        status = status.transformSingle(transformer, data)
+        annotations.transformInplace(transformer, data)
     }
 
     override fun <D> transformChildren(transformer: FirTransformer<D>, data: D): FirElement {
         getter = getter.transformSingle(transformer, data)
         setter = setter?.transformSingle(transformer, data)
-        transformInitializerAndDelegate(transformer, data)
-
-        return super<FirAbstractCallableMember>.transformChildren(transformer, data)
+        transformChildrenWithoutAccessors(transformer, data)
+        // Everything other (annotations, etc.) is done above
+        return this
     }
 }

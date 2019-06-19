@@ -28,7 +28,7 @@ interface FirProperty : @VisitedSupertype FirDeclaration, FirCallableMemberDecla
 
     val backingFieldSymbol: FirBackingFieldSymbol
 
-    fun <D> transformInitializerAndDelegate(transformer: FirTransformer<D>, data: D)
+    fun <D> transformChildrenWithoutAccessors(transformer: FirTransformer<D>, data: D)
 
     override fun <R, D> accept(visitor: FirVisitor<R, D>, data: D): R =
         visitor.visitProperty(this, data)
