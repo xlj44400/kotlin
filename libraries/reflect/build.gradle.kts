@@ -220,7 +220,3 @@ artifacts {
 }
 
 javadocJar()
-
-dist(fromTask = result) {
-    from(sourcesJar)
-}

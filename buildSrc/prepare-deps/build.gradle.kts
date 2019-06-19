@@ -1,4 +1,4 @@
-@file:Suppress("PropertyName", "HasPlatformType", "UnstableApiUsage")
+@file:Suppress("PropertyName", "UnstableApiUsage")
 
 import org.gradle.internal.os.OperatingSystem
 import java.io.Closeable

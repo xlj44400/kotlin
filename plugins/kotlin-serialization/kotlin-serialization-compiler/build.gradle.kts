@@ -32,9 +32,7 @@ sourceSets {
 runtimeJar()
 sourcesJar()
 javadocJar()
-testsJar {}
-
-dist(targetName = the<BasePluginConvention>().archivesBaseName + ".jar")
+testsJar()
 
 projectTest(parallel = true) {
     workingDir = rootDir

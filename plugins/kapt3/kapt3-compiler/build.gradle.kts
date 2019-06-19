@@ -56,5 +56,3 @@ runtimeJar()
 
 sourcesJar()
 javadocJar()
-
-dist()
