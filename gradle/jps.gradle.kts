@@ -39,9 +39,9 @@ if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
         apply(mapOf("plugin" to "idea"))
         afterEvaluate {
             // Make Idea import embedded configuration as transitive dependency
-            configurations.findByName("embedded")?.let { embedded ->
-                configurations.findByName("runtime")?.extendsFrom(embedded)
-            }
+//            configurations.findByName("embedded")?.let { embedded ->
+//                configurations.findByName("runtime")?.extendsFrom(embedded)
+//            }
         }
     }
 
@@ -276,13 +276,19 @@ fun NamedDomainObjectContainer<TopLevelArtifact>.dist() {
 fun NamedDomainObjectContainer<TopLevelArtifact>.kotlinc() {
     val kotlinCompilerProject = project(":kotlin-compiler")
     val libraries by kotlinCompilerProject.configurations
+    val compilerPlugins by kotlinCompilerProject.configurations
+    val sources by kotlinCompilerProject.configurations
+
     create("kotlinc") {
         directory("bin") {
             directoryContent("$rootDir/compiler/cli/bin")
         }
 
         directory("lib") {
-            jarsFromConfiguration(libraries)
+            artifact("kotlin-compiler.jar")
+            jarsFromConfiguration(libraries) { it.replace("-$bootstrapKotlinVersion", "") }
+            jarsFromConfiguration(compilerPlugins) { it.removePrefix("kotlin-") }
+            sourcesFromConfiguration(sources)
         }
 
         directory("license") {
@@ -361,25 +367,56 @@ fun RecursiveArtifact.jarContentsFromConfiguration(configuration: Configuration)
         }
 }
 
-fun RecursiveArtifact.jarsFromConfiguration(configuration: Configuration) {
+fun RecursiveArtifact.sourcesFromConfiguration(configuration: Configuration) {
+    val resolvedArtifacts = configuration
+        .resolvedConfiguration
+        .resolvedArtifacts
+
+    resolvedArtifacts
+        .map { it.id.componentIdentifier }
+        .filterIsInstance<ProjectComponentIdentifier>()
+        .forEach {
+            archive(it.projectName + "-sources.jar") {
+                project(it.projectPath)
+                    .mainSourceSet
+                    .allSource
+                    .sourceDirectories
+                    .forEach {sourceDirectory ->
+                    directoryContent(sourceDirectory)
+                }
+            }
+        }
+}
+
+fun RecursiveArtifact.jarsFromConfiguration(configuration: Configuration, renamer: (String) -> String = { it }) {
     val resolvedArtifacts = configuration
         .resolvedConfiguration
         .resolvedArtifacts
 
     resolvedArtifacts.filter { it.id.componentIdentifier is ModuleComponentIdentifier }
         .map { it.file }
-        .forEach(::file)
+        .forEach {
+            val renamed = renamer(it.nameWithoutExtension)
+            if (it.extension == "jar" && renamed != it.nameWithoutExtension) {
+                archive("$renamed.jar") {
+                    extractedDirectory(it)
+                }
+            } else {
+                file(it)
+            }
+        }
 
     resolvedArtifacts
         .map { it.id.componentIdentifier }
         .filterIsInstance<ProjectComponentIdentifier>()
         .forEach {
-            val artifactName = it.projectName + ".jar"
+            val artifactName = renamer(it.projectName) + ".jar"
             if (it.projectName in jarArtifactProjects) {
                 artifact(artifactName)
             } else {
                 archive(artifactName) {
                     moduleOutput(moduleName(it.projectPath))
+                    jarContentsFromEmbeddedConfiguration(project(it.projectPath))
                 }
             }
         }
