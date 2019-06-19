@@ -46,6 +46,7 @@ dependencies {
     }
     Platform[192].orHigher {
         testCompileOnly(intellijPluginDep("java")) { includeJars("jps-builders", "jps-builders-6") }
+        testRuntime(intellijPluginDep("java"))
     }
 
     Ide.IJ {

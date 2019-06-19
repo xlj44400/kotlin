@@ -9,6 +9,7 @@ plugins {
 dependencies {
     testCompileOnly(intellijCoreDep()) { includeJars("intellij-core") }
     testRuntime(intellijDep())
+    testRuntime(intellijCoreDep()) { includeJars("intellij-core") }
     testCompileOnly(intellijDep()) { includeJars("idea", "idea_rt", "openapi") }
 
     Platform[181].orHigher {
