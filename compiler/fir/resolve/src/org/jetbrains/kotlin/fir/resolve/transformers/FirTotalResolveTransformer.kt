@@ -16,7 +16,9 @@ class FirTotalResolveTransformer {
         FirTypeResolveTransformer(),
         FirStatusResolveTransformer(),
         FirImplicitTypeBodyResolveTransformerAdapter(),
-        FirBodyResolveTransformerAdapter()
+        FirBodyResolveTransformerAdapter(),
+
+        FirMissedImplicitTypeTransformer()
     )
 
     fun processFiles(files: List<FirFile>) {
