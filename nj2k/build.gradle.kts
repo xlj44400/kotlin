@@ -24,7 +24,9 @@ dependencies {
     }
 
     Platform[192].orHigher {
-        compileOnly(intellijPluginDep("java")) { includeJars("java-impl") }
+        compileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl") }
+        testCompileOnly(intellijPluginDep("java")) { includeJars("java-api", "java-impl") }
+        testRuntime(intellijPluginDep("java"))
     }
 
     testCompile(project(":idea"))
