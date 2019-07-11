@@ -5,17 +5,15 @@
 
 package org.jetbrains.kotlin.fir.resolve.calls
 
-import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
-import org.jetbrains.kotlin.fir.expressions.FirWrappedArgumentExpression
-import org.jetbrains.kotlin.fir.symbols.ConeSymbol
+import org.jetbrains.kotlin.fir.expressions.*
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.resolve.calls.components.PostponedArgumentsAnalyzer
 import org.jetbrains.kotlin.resolve.calls.inference.model.ConstraintStorage
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 
 class CandidateFactory(
     val inferenceComponents: InferenceComponents,
-    callInfo: CallInfo
+    val callInfo: CallInfo
 ) {
 
     val baseSystem: ConstraintStorage
@@ -30,14 +28,14 @@ class CandidateFactory(
     }
 
     fun createCandidate(
-        symbol: ConeSymbol,
+        symbol: FirBasedSymbol<*>,
         dispatchReceiverValue: ClassDispatchReceiverValue?,
         implicitExtensionReceiverValue: ImplicitReceiverValue?,
         explicitReceiverKind: ExplicitReceiverKind
     ): Candidate {
         return Candidate(
             symbol, dispatchReceiverValue, implicitExtensionReceiverValue,
-            explicitReceiverKind, inferenceComponents, baseSystem
+            explicitReceiverKind, inferenceComponents, baseSystem, callInfo
         )
     }
 }
@@ -49,9 +47,8 @@ fun PostponedArgumentsAnalyzer.Context.addSubsystemFromExpression(expression: Fi
     }
 }
 
-internal fun FirFunctionCall.candidate(): Candidate? {
-    val callee = this.calleeReference
-    return when (callee) {
+internal fun FirQualifiedAccess.candidate(): Candidate? {
+    return when (val callee = this.calleeReference) {
         is FirNamedReferenceWithCandidate -> return callee.candidate
         else -> null
     }

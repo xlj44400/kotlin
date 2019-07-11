@@ -9,12 +9,13 @@ import org.jetbrains.kotlin.backend.common.descriptors.isSuspend
 import org.jetbrains.kotlin.backend.common.ir.isElseBranch
 import org.jetbrains.kotlin.ir.backend.js.utils.JsGenerationContext
 import org.jetbrains.kotlin.ir.backend.js.utils.Namer
+import org.jetbrains.kotlin.ir.backend.js.utils.emptyScope
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrFunctionAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.expressions.IrWhen
-import org.jetbrains.kotlin.ir.util.isEffectivelyExternal
+import org.jetbrains.kotlin.ir.util.isExternalOrInheritedFromExternal
 import org.jetbrains.kotlin.js.backend.ast.*
 
 fun jsVar(name: JsName, initializer: IrExpression?, context: JsGenerationContext): JsVars {
@@ -41,19 +42,12 @@ fun jsAssignment(left: JsExpression, right: JsExpression) = JsBinaryOperation(Js
 
 fun prototypeOf(classNameRef: JsExpression) = JsNameRef(Namer.PROTOTYPE_NAME, classNameRef)
 
-fun translateFunction(declaration: IrFunction, name: JsName?, isObjectConstructor: Boolean, context: JsGenerationContext): JsFunction {
-    val functionScope = JsFunctionScope(context.currentScope, "scope for ${name ?: "annon"}")
-    val functionContext = context.newDeclaration(functionScope, declaration)
+fun translateFunction(declaration: IrFunction, name: JsName?, context: JsGenerationContext): JsFunction {
+    val functionContext = context.newDeclaration(declaration)
     val functionParams = declaration.valueParameters.map { functionContext.getNameForValueDeclaration(it) }
     val body = declaration.body?.accept(IrElementToJsStatementTransformer(), functionContext) as? JsBlock ?: JsBlock()
 
-    val functionBody = if (isObjectConstructor) {
-        val instanceName = context.currentScope.declareName(name!!.objectInstanceName())
-        val assignObject = jsAssignment(JsNameRef(instanceName), JsThisRef())
-        JsBlock(assignObject.makeStmt(), body)
-    } else body
-
-    val function = JsFunction(functionScope, functionBody, "member function ${name ?: "annon"}")
+    val function = JsFunction(emptyScope, body, "member function ${name ?: "annon"}")
 
     function.name = name
 
@@ -64,7 +58,7 @@ fun translateFunction(declaration: IrFunction, name: JsName?, isObjectConstructo
     declaration.extensionReceiverParameter?.let { function.addParameter(functionContext.getNameForValueDeclaration(it)) }
     functionParams.forEach { function.addParameter(it) }
     if (declaration.descriptor.isSuspend) {
-        function.addParameter(context.currentScope.declareName(Namer.CONTINUATION))
+        function.addParameter(JsName(Namer.CONTINUATION)) // TODO: Use namer?
     }
 
     return function
@@ -78,7 +72,7 @@ fun translateCallArguments(expression: IrMemberAccessExpression, context: JsGene
         val argument = expression.getValueArgument(index)
         val result = argument?.accept(transformer, context)
         if (result == null) {
-            require(expression is IrFunctionAccessExpression && expression.symbol.owner.isEffectivelyExternal())
+            assert(expression is IrFunctionAccessExpression && expression.symbol.owner.isExternalOrInheritedFromExternal())
             JsPrefixOperation(JsUnaryOperator.VOID, JsIntLiteral(1))
         } else
             result
@@ -90,9 +84,6 @@ fun translateCallArguments(expression: IrMemberAccessExpression, context: JsGene
 }
 
 fun JsStatement.asBlock() = this as? JsBlock ?: JsBlock(this)
-
-// TODO: Don't use implicit name conventions
-fun JsName.objectInstanceName() = "${ident}_instance"
 
 fun defineProperty(receiver: JsExpression, name: String, value: () -> JsExpression): JsInvocation {
     val objectDefineProperty = JsNameRef("defineProperty", Namer.JS_OBJECT)

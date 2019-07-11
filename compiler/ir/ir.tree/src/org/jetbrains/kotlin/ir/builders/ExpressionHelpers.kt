@@ -160,7 +160,15 @@ fun IrBuilderWithScope.irIfNull(type: IrType, subject: IrExpression, thenPart: I
     irIfThenElse(type, irEqualsNull(subject), thenPart, elsePart)
 
 fun IrBuilderWithScope.irThrowNpe(origin: IrStatementOrigin? = null) =
-    IrNullaryPrimitiveImpl(startOffset, endOffset, context.irBuiltIns.nothingType, origin, context.irBuiltIns.throwNpeSymbol)
+    IrCallImpl(
+        startOffset, endOffset,
+        context.irBuiltIns.nothingType,
+        context.irBuiltIns.throwNpeSymbol,
+        context.irBuiltIns.throwNpeSymbol.descriptor,
+        typeArgumentsCount = 0,
+        valueArgumentsCount = 0,
+        origin = origin
+    )
 
 fun IrBuilderWithScope.irIfThenReturnTrue(condition: IrExpression) =
     irIfThen(context.irBuiltIns.unitType, condition, irReturnTrue())
@@ -210,29 +218,31 @@ fun IrBuilderWithScope.irNotEquals(arg1: IrExpression, arg2: IrExpression) =
     )
 
 fun IrBuilderWithScope.irGet(type: IrType, receiver: IrExpression?, getterSymbol: IrFunctionSymbol): IrCall =
-    IrGetterCallImpl(
+    IrCallImpl(
         startOffset, endOffset,
         type,
         getterSymbol as IrSimpleFunctionSymbol,
         getterSymbol.descriptor,
         typeArgumentsCount = getterSymbol.owner.typeParameters.size,
-        dispatchReceiver = receiver,
-        extensionReceiver = null,
+        valueArgumentsCount = 0,
         origin = IrStatementOrigin.GET_PROPERTY
-    )
+    ).apply {
+        dispatchReceiver = receiver
+    }
 
 fun IrBuilderWithScope.irSet(type: IrType, receiver: IrExpression?, setterSymbol: IrFunctionSymbol, value: IrExpression): IrCall =
-    IrSetterCallImpl(
+    IrCallImpl(
         startOffset, endOffset,
         type,
         setterSymbol as IrSimpleFunctionSymbol,
         setterSymbol.descriptor,
         typeArgumentsCount = setterSymbol.owner.typeParameters.size,
-        dispatchReceiver = receiver,
-        extensionReceiver = null,
-        argument = value,
+        valueArgumentsCount = 1,
         origin = IrStatementOrigin.EQ
-    )
+    ).apply {
+        dispatchReceiver = receiver
+        putValueArgument(0, value)
+    }
 
 fun IrBuilderWithScope.irCall(
     callee: IrFunctionSymbol,
@@ -294,7 +304,7 @@ fun IrBuilderWithScope.irCall(callee: IrFunction, origin: IrStatementOrigin): Ir
 
 fun IrBuilderWithScope.irDelegatingConstructorCall(callee: IrConstructor): IrDelegatingConstructorCall =
     IrDelegatingConstructorCallImpl(
-        startOffset, endOffset, callee.returnType, callee.symbol, callee.descriptor,
+        startOffset, endOffset, context.irBuiltIns.unitType, callee.symbol, callee.descriptor,
         callee.parentAsClass.typeParameters.size, callee.valueParameters.size
     )
 
@@ -316,7 +326,7 @@ fun IrBuilderWithScope.typeOperator(
     typeOperator: IrTypeOperator,
     typeOperand: IrType
 ) =
-    IrTypeOperatorCallImpl(startOffset, endOffset, resultType, typeOperator, typeOperand, typeOperand.classifierOrFail, argument)
+    IrTypeOperatorCallImpl(startOffset, endOffset, resultType, typeOperator, typeOperand, argument)
 
 fun IrBuilderWithScope.irIs(argument: IrExpression, type: IrType) =
     typeOperator(context.irBuiltIns.booleanType, argument, IrTypeOperator.INSTANCEOF, type)
@@ -325,10 +335,10 @@ fun IrBuilderWithScope.irNotIs(argument: IrExpression, type: IrType) =
     typeOperator(context.irBuiltIns.booleanType, argument, IrTypeOperator.NOT_INSTANCEOF, type)
 
 fun IrBuilderWithScope.irAs(argument: IrExpression, type: IrType) =
-    IrTypeOperatorCallImpl(startOffset, endOffset, type, IrTypeOperator.CAST, type, type.classifierOrFail, argument)
+    IrTypeOperatorCallImpl(startOffset, endOffset, type, IrTypeOperator.CAST, type, argument)
 
 fun IrBuilderWithScope.irImplicitCast(argument: IrExpression, type: IrType) =
-    IrTypeOperatorCallImpl(startOffset, endOffset, type, IrTypeOperator.IMPLICIT_CAST, type, type.classifierOrFail, argument)
+    IrTypeOperatorCallImpl(startOffset, endOffset, type, IrTypeOperator.IMPLICIT_CAST, type, argument)
 
 fun IrBuilderWithScope.irInt(value: Int) =
     IrConstImpl.int(startOffset, endOffset, context.irBuiltIns.intType, value)

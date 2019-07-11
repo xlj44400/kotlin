@@ -87,21 +87,12 @@ class IrElementToJsExpressionTransformer : BaseIrElementToJsNodeTransformer<JsEx
     override fun visitGetValue(expression: IrGetValue, context: JsGenerationContext): JsExpression =
         context.getNameForValueDeclaration(expression.symbol.owner).makeRef()
 
-    override fun visitGetObjectValue(expression: IrGetObjectValue, context: JsGenerationContext) = when (expression.symbol.owner.kind) {
-        ClassKind.OBJECT -> {
-            val obj = expression.symbol.owner
-            if (obj.isEffectivelyExternal()) {
-                context.getRefForExternalClass(obj)
-            } else {
-                val className = context.getNameForClass(expression.symbol.owner)
-                // TODO: Don't use implicit naming
-                val getInstanceName = className.ident + "_getInstance"
-                JsInvocation(JsNameRef(getInstanceName))
-            }
-        }
-        else -> TODO()
+    override fun visitGetObjectValue(expression: IrGetObjectValue, context: JsGenerationContext): JsExpression {
+        val obj = expression.symbol.owner
+        assert(obj.kind == ClassKind.OBJECT)
+        assert(obj.isEffectivelyExternal()) { "Non external IrGetObjectValue must be lowered" }
+        return context.getRefForExternalClass(obj)
     }
-
 
     override fun visitSetField(expression: IrSetField, context: JsGenerationContext): JsExpression {
         val fieldName = context.getNameForField(expression.symbol.owner)
@@ -277,7 +268,7 @@ class IrElementToJsExpressionTransformer : BaseIrElementToJsNodeTransformer<JsEx
             if (jsDispatchReceiver != null) {
                 // TODO: Do not create IIFE when receiver expression is simple or has no side effects
                 // TODO: Do not create IIFE at all? (Currently there is no reliable way to create temporary variable in current scope)
-                val receiverName = context.currentScope.declareFreshName("\$externalVarargReceiverTmp")
+                val receiverName = JsName("\$externalVarargReceiverTmp")
                 val receiverRef = receiverName.makeRef()
                 JsInvocation(
                     // Create scope for temporary variable holding dispatch receiver
@@ -285,7 +276,7 @@ class IrElementToJsExpressionTransformer : BaseIrElementToJsNodeTransformer<JsEx
                     JsNameRef(
                     "call",
                     JsFunction(
-                        context.currentScope,
+                        emptyScope,
                         JsBlock(
                             JsVars(JsVars.JsVar(receiverName, jsDispatchReceiver)),
                             JsReturn(

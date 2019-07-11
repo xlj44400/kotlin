@@ -85,7 +85,7 @@ fun FirRegularClass.buildDefaultUseSiteScope(useSiteSession: FirSession, builder
 private fun ConeClassLikeType.wrapSubstitutionScopeIfNeed(
     session: FirSession,
     useSiteScope: FirScope,
-    declaration: FirClassLikeDeclaration,
+    declaration: FirClassLikeDeclaration<*>,
     builder: ScopeSession
 ): FirScope {
     if (this.typeArguments.isEmpty()) return useSiteScope
@@ -95,7 +95,7 @@ private fun ConeClassLikeType.wrapSubstitutionScopeIfNeed(
             typeParameter.symbol to (typeArgument as? ConeTypedProjection)?.type
         }.filter { (_, type) -> type != null }.toMap() as Map<ConeTypeParameterSymbol, ConeKotlinType>
 
-        FirClassSubstitutionScope(session, useSiteScope, substitution)
+        FirClassSubstitutionScope(session, useSiteScope, builder, substitution)
     }
 }
 

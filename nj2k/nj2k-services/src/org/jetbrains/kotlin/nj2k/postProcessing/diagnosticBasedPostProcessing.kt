@@ -41,8 +41,13 @@ class DiagnosticBasedPostProcessingGroup(diagnosticBasedProcessings: List<Diagno
             CommandProcessor.getInstance().runUndoTransparentAction {
                 val diagnostics = runWriteAction { analyzeFileRange(file, rangeMarker) }
                 for (diagnostic in diagnostics.all()) {
-                    diagnosticToFix[diagnostic.factory]?.forEach { fix ->
-                        runWriteAction { fix(diagnostic) }
+                    val range = rangeMarker?.range ?: file.textRange
+                    if (diagnostic.psiElement.isInRange(range)) {
+                        diagnosticToFix[diagnostic.factory]?.forEach { fix ->
+                            if (diagnostic.psiElement.isValid) {
+                                runWriteAction { fix(diagnostic) }
+                            }
+                        }
                     }
                 }
             }
@@ -50,9 +55,11 @@ class DiagnosticBasedPostProcessingGroup(diagnosticBasedProcessings: List<Diagno
     }
 
     private fun analyzeFileRange(file: KtFile, rangeMarker: RangeMarker?): Diagnostics {
-        val elements =
-            if (rangeMarker == null) listOf(file)
-            else file.elementsInRange(rangeMarker.range!!).filterIsInstance<KtElement>()
+        val elements = when {
+            rangeMarker == null -> listOf(file)
+            rangeMarker.isValid -> file.elementsInRange(rangeMarker.range!!).filterIsInstance<KtElement>()
+            else -> emptyList()
+        }
 
         return if (elements.isNotEmpty())
             file.getResolutionFacade().analyzeWithAllCompilerChecks(elements).bindingContext.diagnostics

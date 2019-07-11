@@ -1,18 +1,22 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
 package org.jetbrains.kotlin.backend.jvm.codegen
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns.FQ_NAMES
-import org.jetbrains.kotlin.codegen.*
+import org.jetbrains.kotlin.codegen.AsmUtil
+import org.jetbrains.kotlin.codegen.ClassBuilderMode
+import org.jetbrains.kotlin.codegen.OwnerKind
 import org.jetbrains.kotlin.codegen.state.GenerationState
+import org.jetbrains.kotlin.codegen.visitAnnotableParameterCount
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.resolve.jvm.AsmTypes
 import org.jetbrains.kotlin.resolve.jvm.annotations.JVM_SYNTHETIC_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.resolve.jvm.annotations.STRICTFP_ANNOTATION_FQ_NAME
@@ -44,7 +48,7 @@ open class FunctionCodegen(
         val signature = classCodegen.typeMapper.mapSignatureWithGeneric(irFunction, OwnerKind.IMPLEMENTATION)
 
         val flags = calculateMethodFlags(irFunction.isStatic)
-        val methodVisitor = createMethod(flags, signature)
+        var methodVisitor = createMethod(flags, signature)
 
         generateParameterNames(irFunction, methodVisitor, signature, state, flags.and(Opcodes.ACC_SYNTHETIC) != 0)
 
@@ -60,8 +64,22 @@ open class FunctionCodegen(
             generateAnnotationDefaultValueIfNeeded(methodVisitor)
         } else {
             val frameMap = createFrameMapWithReceivers(signature)
+            val irClass = classCodegen.context.suspendFunctionContinuations[irFunction]
+            val element = (irFunction.symbol.descriptor.psiElement
+                ?: classCodegen.context.suspendLambdaToOriginalFunctionMap[irFunction.parent]?.symbol?.descriptor?.psiElement) as? KtElement
+            val continuationClassBuilder = classCodegen.context.continuationClassBuilders[irClass]
+            methodVisitor = when {
+                irFunction.isSuspend -> generateStateMachineForNamedFunction(
+                    irFunction, classCodegen, methodVisitor, flags, signature, continuationClassBuilder, element!!
+                )
+                irFunction.isInvokeSuspendOfLambda(classCodegen.context) -> generateStateMachineForLambda(
+                    classCodegen, methodVisitor, flags, signature, element!!
+                )
+                else -> methodVisitor
+            }
             ExpressionCodegen(irFunction, frameMap, InstructionAdapter(methodVisitor), classCodegen, isInlineLambda).generate()
             methodVisitor.visitMaxs(-1, -1)
+            continuationClassBuilder?.done()
         }
         methodVisitor.visitEnd()
 

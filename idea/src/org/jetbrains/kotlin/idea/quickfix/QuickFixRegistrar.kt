@@ -512,6 +512,7 @@ class QuickFixRegistrar : QuickFixContributor {
         INAPPLICABLE_LATEINIT_MODIFIER.registerFactory(RemoveNullableFix.LATEINIT_FACTORY)
         INAPPLICABLE_LATEINIT_MODIFIER.registerFactory(RemovePartsFromPropertyFix.LateInitFactory)
         INAPPLICABLE_LATEINIT_MODIFIER.registerFactory(RemoveModifierFix.createRemoveLateinitFactory())
+        INAPPLICABLE_LATEINIT_MODIFIER.registerFactory(ConvertLateinitPropertyToNotNullDelegateFix)
 
         VARIABLE_WITH_REDUNDANT_INITIALIZER.registerFactory(RemoveRedundantInitializerFix)
 
@@ -608,5 +609,7 @@ class QuickFixRegistrar : QuickFixContributor {
 
         RESTRICTED_RETENTION_FOR_EXPRESSION_ANNOTATION.registerFactory(RestrictedRetentionForExpressionAnnotationFactory)
         RESTRICTED_RETENTION_FOR_EXPRESSION_ANNOTATION_WARNING.registerFactory(RestrictedRetentionForExpressionAnnotationFactory)
+
+        NO_VALUE_FOR_PARAMETER.registerFactory(AddConstructorParameterFromSuperTypeCallFix)
     }
 }

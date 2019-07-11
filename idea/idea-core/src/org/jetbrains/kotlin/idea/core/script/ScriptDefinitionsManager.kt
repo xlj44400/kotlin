@@ -16,8 +16,11 @@
 
 package org.jetbrains.kotlin.idea.core.script
 
+import com.intellij.diagnostic.PluginException
 import com.intellij.execution.console.IdeConsoleRootType
+import com.intellij.ide.plugins.PluginManagerCore
 import com.intellij.ide.scratch.ScratchFileService
+import com.intellij.ide.scratch.ScratchRootType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.components.ServiceManager
@@ -66,25 +69,32 @@ class ScriptDefinitionsManager(private val project: Project) : LazyScriptDefinit
     private val failedContributorsHashes = HashSet<Int>()
 
     private val scriptDefinitionsCacheLock = ReentrantReadWriteLock()
-    private val scriptDefinitionsCache = SLRUMap<String, ScriptDefinition>(10, 10)
+    private val scriptDefinitionsCache = SLRUMap<File, ScriptDefinition>(10, 10)
 
-    override fun findDefinition(fileName: String): ScriptDefinition? {
-        if (nonScriptFileName(fileName)) return null
+    override fun findDefinition(file: File): ScriptDefinition? {
+        if (nonScriptFileName(file.name)) return null
         if (!isReady()) return null
 
-        val cached = scriptDefinitionsCacheLock.write { scriptDefinitionsCache.get(fileName) }
+        val cached = scriptDefinitionsCacheLock.write { scriptDefinitionsCache.get(file) }
         if (cached != null) return cached
 
-        val definition = super.findDefinition(fileName) ?: return null
+        val virtualFile = VfsUtil.findFileByIoFile(file, true)
+        val definition =
+            if (virtualFile != null && ScratchFileService.getInstance().getRootType(virtualFile) is ScratchRootType) {
+                // Scratch should always have default script definition
+                getDefaultDefinition()
+            } else {
+                super.findDefinition(file) ?: return null
+            }
 
         scriptDefinitionsCacheLock.write {
-            scriptDefinitionsCache.put(fileName, definition)
+            scriptDefinitionsCache.put(file, definition)
         }
 
         return definition
     }
 
-    override fun findScriptDefinition(fileName: String): KotlinScriptDefinition? = findDefinition(fileName)?.legacyDefinition
+    override fun findScriptDefinition(fileName: String): KotlinScriptDefinition? = findDefinition(File(fileName))?.legacyDefinition
 
     fun reloadDefinitionsBy(source: ScriptDefinitionsSource) = lock.write {
         if (definitions == null) return // not loaded yet
@@ -238,14 +248,14 @@ fun loadDefinitionsFromTemplates(
             // TODO: drop class loading here - it should be handled downstream
             // as a compatibility measure, the asm based reading of annotations should be implemented to filter classes before classloading
             val template = loader.loadClass(templateClassName).kotlin
+            val hostConfiguration = ScriptingHostConfiguration(baseHostConfiguration) {
+                configurationDependencies(JvmDependency(classpath))
+            }
             when {
                 template.annotations.firstIsInstanceOrNull<kotlin.script.templates.ScriptTemplateDefinition>() != null -> {
-                    ScriptDefinition.FromLegacyTemplate(baseHostConfiguration, template, templateClasspath)
+                    ScriptDefinition.FromLegacyTemplate(hostConfiguration, template, templateClasspath)
                 }
                 template.annotations.firstIsInstanceOrNull<kotlin.script.experimental.annotations.KotlinScript>() != null -> {
-                    val hostConfiguration = ScriptingHostConfiguration(baseHostConfiguration) {
-                        configurationDependencies(JvmDependency(classpath))
-                    }
                     ScriptDefinition.FromTemplate(hostConfiguration, template, ScriptDefinition::class)
                 }
                 else -> {
@@ -259,7 +269,13 @@ fun loadDefinitionsFromTemplates(
             LOG.warn("[kts] cannot load script definition class $templateClassName")
             null
         } catch (e: Throwable) {
-            LOG.error("[kts] cannot load script definition class $templateClassName", e)
+            val message = "[kts] cannot load script definition class $templateClassName"
+            val thirdPartyPlugin = PluginManagerCore.getPluginByClassName(templateClassName)
+            if (thirdPartyPlugin != null) {
+                LOG.error(PluginException(message, e, thirdPartyPlugin))
+            } else {
+                LOG.error(message, e)
+            }
             null
         }
     }
@@ -274,6 +290,7 @@ interface ScriptDefinitionContributor {
     @Deprecated("migrating to new configuration refinement: use ScriptDefinitionsSource instead")
     fun getDefinitions(): List<KotlinScriptDefinition>
 
+    @JvmDefault
     @Deprecated("migrating to new configuration refinement: drop usages")
     fun isReady() = true
 
@@ -282,7 +299,7 @@ interface ScriptDefinitionContributor {
             ExtensionPointName.create<ScriptDefinitionContributor>("org.jetbrains.kotlin.scriptDefinitionContributor")
 
         inline fun <reified T> find(project: Project) =
-            Extensions.getArea(project).getExtensionPoint(ScriptDefinitionContributor.EP_NAME).extensions.filterIsInstance<T>().firstOrNull()
+            Extensions.getArea(project).getExtensionPoint(EP_NAME).extensions.filterIsInstance<T>().firstOrNull()
     }
 }
 

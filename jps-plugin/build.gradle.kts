@@ -45,6 +45,10 @@ dependencies {
         testRuntime(project(it))
     }
 
+    Platform[192].orHigher {
+        testRuntimeOnly(intellijPluginDep("java"))
+    }
+
     testRuntime(project(":kotlin-reflect"))
     testRuntime(project(":kotlin-script-runtime"))
 }

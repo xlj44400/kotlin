@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrGetValueImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrConstructorSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
+import org.jetbrains.kotlin.ir.util.deepCopyWithSymbols
 import org.jetbrains.kotlin.ir.util.hasAnnotation
 import org.jetbrains.kotlin.resolve.jvm.annotations.JVM_OVERLOADS_FQ_NAME
 
@@ -59,7 +60,7 @@ private class JvmOverloadsAnnotationLowering(val context: JvmBackendContext) : C
         val wrapperIrFunction = generateWrapperHeader(target, numDefaultParametersToExpect)
 
         val call = if (target is IrConstructor)
-            IrDelegatingConstructorCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, target.returnType, target.symbol, target.descriptor)
+            IrDelegatingConstructorCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, context.irBuiltIns.unitType, target.symbol, target.descriptor)
         else
             IrCallImpl(UNDEFINED_OFFSET, UNDEFINED_OFFSET, target.returnType, target.symbol)
         call.dispatchReceiver = wrapperIrFunction.dispatchReceiverParameter?.let { dispatchReceiver ->
@@ -150,7 +151,7 @@ private class JvmOverloadsAnnotationLowering(val context: JvmBackendContext) : C
         }
 
         res.parent = oldFunction.parent
-        res.annotations.addAll(oldFunction.annotations.map { it.deepCopyWithWrappedDescriptors(res) })
+        res.annotations.addAll(oldFunction.annotations.map { it.deepCopyWithSymbols(res) })
         res.copyTypeParametersFrom(oldFunction)
         res.dispatchReceiverParameter = oldFunction.dispatchReceiverParameter?.copyTo(res)
         res.extensionReceiverParameter = oldFunction.extensionReceiverParameter?.copyTo(res)

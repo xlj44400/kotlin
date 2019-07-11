@@ -2525,6 +2525,11 @@ public class BytecodeTextTestGenerated extends AbstractBytecodeTextTest {
             runTest("compiler/testData/codegen/bytecodeText/inlineClasses/resultApiDoesntUseBox.kt");
         }
 
+        @TestMetadata("resultMangling.kt")
+        public void testResultMangling() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/inlineClasses/resultMangling.kt");
+        }
+
         @TestMetadata("skipCallToUnderlyingValueOfInlineClass.kt")
         public void testSkipCallToUnderlyingValueOfInlineClass() throws Exception {
             runTest("compiler/testData/codegen/bytecodeText/inlineClasses/skipCallToUnderlyingValueOfInlineClass.kt");
@@ -3065,6 +3070,69 @@ public class BytecodeTextTestGenerated extends AbstractBytecodeTextTest {
         @TestMetadata("optimizedMultifileClassFacadeMethods.kt")
         public void testOptimizedMultifileClassFacadeMethods() throws Exception {
             runTest("compiler/testData/codegen/bytecodeText/multifileClasses/optimizedMultifileClassFacadeMethods.kt");
+        }
+    }
+
+    @TestMetadata("compiler/testData/codegen/bytecodeText/notNullAssertions")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class NotNullAssertions extends AbstractBytecodeTextTest {
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, TargetBackend.JVM, testDataFilePath);
+        }
+
+        public void testAllFilesPresentInNotNullAssertions() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/bytecodeText/notNullAssertions"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JVM, true);
+        }
+
+        @TestMetadata("arrayListGet.kt")
+        public void testArrayListGet() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/arrayListGet.kt");
+        }
+
+        @TestMetadata("assertionForNotNullCaptured.kt")
+        public void testAssertionForNotNullCaptured() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/assertionForNotNullCaptured.kt");
+        }
+
+        @TestMetadata("assertionForNotNullTypeParam.kt")
+        public void testAssertionForNotNullTypeParam() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/assertionForNotNullTypeParam.kt");
+        }
+
+        @TestMetadata("doNotGenerateParamAssertions.kt")
+        public void testDoNotGenerateParamAssertions() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/doNotGenerateParamAssertions.kt");
+        }
+
+        @TestMetadata("javaMultipleSubstitutions.kt")
+        public void testJavaMultipleSubstitutions() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/javaMultipleSubstitutions.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableCaptured.kt")
+        public void testNoAssertionForNullableCaptured() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableCaptured.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableGenericMethod.kt")
+        public void testNoAssertionForNullableGenericMethod() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableGenericMethod.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableGenericMethodCall.kt")
+        public void testNoAssertionForNullableGenericMethodCall() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableGenericMethodCall.kt");
+        }
+
+        @TestMetadata("noAssertionForPrivateMethod.kt")
+        public void testNoAssertionForPrivateMethod() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForPrivateMethod.kt");
+        }
+
+        @TestMetadata("noAssertionsForKotlin.kt")
+        public void testNoAssertionsForKotlin() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionsForKotlin.kt");
         }
     }
 

@@ -1,17 +1,6 @@
 /*
- * Copyright 2010-2017 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
 package org.jetbrains.kotlin.backend.jvm
@@ -31,7 +20,12 @@ import org.jetbrains.kotlin.name.NameUtils
 
 private fun makePatchParentsPhase(number: Int) = namedIrFilePhase(
     lower = object : SameTypeCompilerPhase<CommonBackendContext, IrFile> {
-        override fun invoke(phaseConfig: PhaseConfig, phaserState: PhaserState<IrFile>, context: CommonBackendContext, input: IrFile): IrFile {
+        override fun invoke(
+            phaseConfig: PhaseConfig,
+            phaserState: PhaserState<IrFile>,
+            context: CommonBackendContext,
+            input: IrFile
+        ): IrFile {
             input.acceptVoid(PatchDeclarationParentsVisitor())
             return input
         }
@@ -70,12 +64,6 @@ private val propertiesPhase = makeIrFilePhase<CommonBackendContext>(
     stickyPostconditions = setOf((PropertiesLowering)::checkNoProperties)
 )
 
-private val defaultArgumentStubPhase = makeIrFilePhase<CommonBackendContext>(
-    { context -> DefaultArgumentStubGenerator(context, false) },
-    name = "DefaultArgumentsStubGenerator",
-    description = "Generate synthetic stubs for functions with default parameter values"
-)
-
 private val localDeclarationsPhase = makeIrFilePhase<CommonBackendContext>(
     { context ->
         LocalDeclarationsLowering(context, object : LocalNameProvider {
@@ -86,6 +74,13 @@ private val localDeclarationsPhase = makeIrFilePhase<CommonBackendContext>(
     name = "JvmLocalDeclarations",
     description = "Move local declarations to classes",
     prerequisite = setOf(sharedVariablesPhase)
+)
+
+private val defaultArgumentStubPhase = makeIrFilePhase<CommonBackendContext>(
+    { context -> DefaultArgumentStubGenerator(context, false) },
+    name = "DefaultArgumentsStubGenerator",
+    description = "Generate synthetic stubs for functions with default parameter values",
+    prerequisite = setOf(localDeclarationsPhase)
 )
 
 private val innerClassesPhase = makeIrFilePhase(
@@ -115,13 +110,8 @@ val jvmPhases = namedIrFilePhase<JvmBackendContext>(
             annotationPhase then
             tailrecPhase then
 
-            jvmDefaultConstructorPhase then
             jvmInlineClassPhase then
-            defaultArgumentStubPhase then
 
-            interfacePhase then
-            interfaceDelegationPhase then
-            interfaceSuperCallsPhase then
             sharedVariablesPhase then
 
             makePatchParentsPhase(1) then
@@ -129,7 +119,14 @@ val jvmPhases = namedIrFilePhase<JvmBackendContext>(
             enumWhenPhase then
             singletonReferencesPhase then
             localDeclarationsPhase then
+            defaultArgumentStubPhase then
+
+            interfacePhase then
+            interfaceDelegationPhase then
+            interfaceSuperCallsPhase then
+
             singleAbstractMethodPhase then
+            addContinuationPhase then
             callableReferencePhase then
             functionNVarargInvokePhase then
 
@@ -146,6 +143,7 @@ val jvmPhases = namedIrFilePhase<JvmBackendContext>(
             collectionStubMethodLowering then
             bridgePhase then
             jvmOverloadsAnnotationPhase then
+            jvmDefaultConstructorPhase then
             jvmStaticAnnotationPhase then
             staticDefaultFunctionPhase then
 

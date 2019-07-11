@@ -18,6 +18,7 @@ import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.lang.java.JavaLanguage
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ex.ApplicationEx
+import com.intellij.openapi.application.runWriteAction
 import com.intellij.openapi.projectRoots.JavaSdk
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.projectRoots.impl.JavaAwareProjectJdkTableImpl
@@ -34,7 +35,7 @@ import java.io.*
 abstract class WholeProjectPerformanceTest : DaemonAnalyzerTestCase(), WholeProjectFileProvider {
 
     private val rootProjectFile: File = File("../perfTestProject").absoluteFile
-    private val perfStats: Stats = Stats()
+    private val perfStats: Stats = Stats(name = "whole", header = arrayOf("File", "ProcessID", "Time"))
     private val tmp = rootProjectFile
 
     override fun isStressTest(): Boolean = false
@@ -43,7 +44,7 @@ abstract class WholeProjectPerformanceTest : DaemonAnalyzerTestCase(), WholeProj
 
         IdeaTestApplication.getInstance()
         // to prevent leaked SDKs: 1.8 and Kotlin SDK
-        ApplicationManager.getApplication().runWriteAction {
+        runWriteAction {
             val jdkTableImpl = JavaAwareProjectJdkTableImpl.getInstanceEx()
             val homePath = if (jdkTableImpl.internalJdk.homeDirectory!!.name == "jre") {
                 jdkTableImpl.internalJdk.homeDirectory!!.parent.path
@@ -69,18 +70,21 @@ abstract class WholeProjectPerformanceTest : DaemonAnalyzerTestCase(), WholeProj
         InjectedLanguageManager.getInstance(project) // zillion of Dom Sem classes
         LanguageAnnotators.INSTANCE.allForLanguage(JavaLanguage.INSTANCE) // pile of annotator classes loads
         LanguageAnnotators.INSTANCE.allForLanguage(StdLanguages.XML)
-        ProblemHighlightFilter.EP_NAME.extensions
-        ImplicitUsageProvider.EP_NAME.extensionList
-        XmlSchemaProvider.EP_NAME.extensionList
-        XmlFileNSInfoProvider.EP_NAME.extensionList
-        ExternalAnnotatorsFilter.EXTENSION_POINT_NAME.extensionList
-        IndexPatternBuilder.EP_NAME.extensionList
+        assertTrue(
+            "side effect: to load extensions",
+            ProblemHighlightFilter.EP_NAME.extensions.toMutableList()
+                .plus(ImplicitUsageProvider.EP_NAME.extensions)
+                .plus(XmlSchemaProvider.EP_NAME.extensions)
+                .plus(XmlFileNSInfoProvider.EP_NAME.extensions)
+                .plus(ExternalAnnotatorsFilter.EXTENSION_POINT_NAME.extensions)
+                .plus(IndexPatternBuilder.EP_NAME.extensions).isNotEmpty()
+        )
     }
 
     override fun setUpProject() {
         println("Using project in $tmp")
 
-        (ApplicationManager.getApplication() as ApplicationEx).doNotSave()
+        (ApplicationManager.getApplication() as ApplicationEx).isSaveAllowed = false
         myProject = ProjectUtil.openOrImport(tmp.path, null, false)
     }
 

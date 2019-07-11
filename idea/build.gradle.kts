@@ -99,6 +99,12 @@ dependencies {
     compileOnly(project(":kotlin-daemon-client"))
 
     compileOnly(intellijDep())
+    Platform[192].orHigher {
+        compileOnly(intellijPluginDep("java"))
+        testCompileOnly(intellijPluginDep("java"))
+        testRuntime(intellijPluginDep("java"))
+    }
+
     compileOnly(commonDep("org.jetbrains", "markdown"))
     compileOnly(commonDep("com.google.code.findbugs", "jsr305"))
     compileOnly(intellijPluginDep("IntelliLang"))
@@ -174,6 +180,8 @@ dependencies {
 
     performanceTestCompile(sourceSets["test"].output)
     performanceTestCompile(sourceSets["main"].output)
+    performanceTestCompile(project(":nj2k"))
+    performanceTestCompile(intellijPluginDep("gradle"))
     performanceTestRuntime(sourceSets["performanceTest"].output)
 }
 
@@ -205,6 +213,8 @@ projectTest(taskName = "performanceTest") {
     }
 }
 
-testsJar {}
+testsJar {
+    from(sourceSets["performanceTest"].output)
+}
 
 configureFormInstrumentation()

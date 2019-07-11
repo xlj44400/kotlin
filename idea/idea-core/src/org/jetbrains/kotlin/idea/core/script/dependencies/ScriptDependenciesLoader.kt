@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.scripting.resolve.ScriptCompilationConfigurationWrap
 import org.jetbrains.kotlin.scripting.resolve.ScriptReportSink
 import kotlin.script.experimental.api.ResultWithDiagnostics
 import kotlin.script.experimental.api.valueOrNull
-import kotlin.script.experimental.jvm.compat.mapToLegacyReports
 
 // TODO: rename and provide alias for compatibility - this is not only about dependencies anymore
 abstract class ScriptDependenciesLoader(protected val project: Project) {
@@ -48,7 +47,10 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
         }
 
         if (oldResult != result) {
-            if (shouldShowNotification() && !ApplicationManager.getApplication().isUnitTestMode) {
+            if (shouldShowNotification()
+                && oldResult.valueOrNull() != result.valueOrNull() // Only compilation configuration changed
+                && !ApplicationManager.getApplication().isUnitTestMode
+            ) {
                 debug(file) {
                     "dependencies changed, notification is shown: old = $oldResult, new = $result"
                 }
@@ -74,9 +76,7 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
     }
 
     private fun attachReportsIfChanged(result: ResultWithDiagnostics<*>, file: VirtualFile) {
-        if (file.getUserData(IdeScriptReportSink.Reports) != result.reports.takeIf { it.isNotEmpty() }) {
-            reporter.attachReports(file, result.reports.mapToLegacyReports())
-        }
+        reporter.attachReports(file, result.reports)
     }
 
     private fun save(compilationConfigurationResult: ScriptCompilationConfigurationResult?, file: VirtualFile) {

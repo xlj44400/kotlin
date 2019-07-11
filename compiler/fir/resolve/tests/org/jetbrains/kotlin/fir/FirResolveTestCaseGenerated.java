@@ -144,6 +144,11 @@ public class FirResolveTestCaseGenerated extends AbstractFirResolveTestCase {
         runTest("compiler/fir/resolve/testData/resolve/typeAliasWithGeneric.kt");
     }
 
+    @TestMetadata("typeFromGetter.kt")
+    public void testTypeFromGetter() throws Exception {
+        runTest("compiler/fir/resolve/testData/resolve/typeFromGetter.kt");
+    }
+
     @TestMetadata("typeParameterInPropertyReceiver.kt")
     public void testTypeParameterInPropertyReceiver() throws Exception {
         runTest("compiler/fir/resolve/testData/resolve/typeParameterInPropertyReceiver.kt");
@@ -365,6 +370,11 @@ public class FirResolveTestCaseGenerated extends AbstractFirResolveTestCase {
             @TestMetadata("implicitTypeOrder.kt")
             public void testImplicitTypeOrder() throws Exception {
                 runTest("compiler/fir/resolve/testData/resolve/expresssions/invoke/implicitTypeOrder.kt");
+            }
+
+            @TestMetadata("simple.kt")
+            public void testSimple() throws Exception {
+                runTest("compiler/fir/resolve/testData/resolve/expresssions/invoke/simple.kt");
             }
 
             @TestMetadata("threeReceivers.kt")

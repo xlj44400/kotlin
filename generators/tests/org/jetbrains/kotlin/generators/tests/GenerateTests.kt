@@ -105,6 +105,7 @@ import org.jetbrains.kotlin.idea.maven.AbstractKotlinMavenInspectionTest
 import org.jetbrains.kotlin.idea.maven.configuration.AbstractMavenConfigureProjectByChangingFileTest
 import org.jetbrains.kotlin.idea.navigation.*
 import org.jetbrains.kotlin.idea.parameterInfo.AbstractParameterInfoTest
+import org.jetbrains.kotlin.idea.perf.*
 import org.jetbrains.kotlin.idea.quickfix.AbstractQuickFixMultiFileTest
 import org.jetbrains.kotlin.idea.quickfix.AbstractQuickFixMultiModuleTest
 import org.jetbrains.kotlin.idea.quickfix.AbstractQuickFixTest
@@ -152,7 +153,9 @@ import org.jetbrains.kotlin.kapt.cli.test.AbstractKaptToolIntegrationTest
 import org.jetbrains.kotlin.kapt3.test.AbstractClassFileToSourceStubConverterTest
 import org.jetbrains.kotlin.kapt3.test.AbstractKotlinKaptContextTest
 import org.jetbrains.kotlin.nj2k.AbstractNewJavaToKotlinConverterSingleFileTest
+import org.jetbrains.kotlin.nj2k.AbstractNewJavaToKotlinCopyPasteConversionTest
 import org.jetbrains.kotlin.nj2k.AbstractNullabilityAnalysisTest
+import org.jetbrains.kotlin.nj2k.AbstractTextNewJavaToKotlinCopyPasteConversionTest
 import org.jetbrains.kotlin.noarg.AbstractBlackBoxCodegenTestForNoArg
 import org.jetbrains.kotlin.noarg.AbstractBytecodeListingTestForNoArg
 import org.jetbrains.kotlin.psi.patternMatching.AbstractPsiUnifierTest
@@ -980,6 +983,12 @@ fun main(args: Array<String>) {
         testClass<AbstractNewJavaToKotlinConverterSingleFileTest> {
             model("newJ2k", extension = "java")
         }
+        testClass<AbstractNewJavaToKotlinCopyPasteConversionTest> {
+            model("copyPaste", pattern = """^([^\.]+)\.java$""")
+        }
+        testClass<AbstractTextNewJavaToKotlinCopyPasteConversionTest> {
+            model("copyPastePlainText", pattern = """^([^\.]+)\.txt$""")
+        }
         testClass<AbstractNullabilityAnalysisTest> {
             model("nullabilityAnalysis")
         }
@@ -1169,6 +1178,48 @@ fun main(args: Array<String>) {
 
         testClass<AbstractSerializationIrBytecodeListingTest> {
             model("codegen")
+        }
+    }
+
+    testGroup("idea/performanceTests", "idea/testData") {
+        testClass<AbstractPerformanceJavaToKotlinCopyPasteConversionTest> {
+            model("copyPaste/conversion", testMethod = "doPerfTest", pattern = """^([^\.]+)\.java$""")
+        }
+
+        testClass<AbstractPerformanceNewJavaToKotlinCopyPasteConversionTest> {
+            model("copyPaste/conversion", testMethod = "doPerfTest", pattern = """^([^\.]+)\.java$""")
+        }
+
+        testClass<AbstractPerformanceHighlightingTest> {
+            model("highlighter", testMethod = "doPerfTest")
+        }
+
+        testClass<AbstractPerformanceAddImportTest> {
+            model("addImport", testMethod = "doPerfTest", pattern = KT_WITHOUT_DOTS_IN_NAME)
+        }
+
+
+    }
+
+    testGroup("idea/performanceTests", "idea/idea-completion/testData") {
+        testClass<AbstractPerformanceCompletionIncrementalResolveTest> {
+            model("incrementalResolve", testMethod = "doPerfTest")
+        }
+
+        testClass<AbstractPerformanceBasicCompletionHandlerTest> {
+            model("handlers/basic", testMethod = "doPerfTest", pattern = KT_WITHOUT_DOTS_IN_NAME)
+        }
+
+        testClass<AbstractPerformanceSmartCompletionHandlerTest> {
+            model("handlers/smart", testMethod = "doPerfTest")
+        }
+
+        testClass<AbstractPerformanceKeywordCompletionHandlerTest> {
+            model("handlers/keywords", testMethod = "doPerfTest")
+        }
+
+        testClass<AbstractPerformanceCompletionCharFilterTest> {
+            model("handlers/charFilter", testMethod = "doPerfTest")
         }
     }
 /*

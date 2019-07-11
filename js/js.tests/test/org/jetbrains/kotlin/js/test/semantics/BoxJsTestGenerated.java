@@ -2692,6 +2692,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
                 runTest("js/js.translator/testData/box/expression/try/exceptionToString.kt");
             }
 
+            @TestMetadata("exceptionToString_legacy.kt")
+            public void testExceptionToString_legacy() throws Exception {
+                runTest("js/js.translator/testData/box/expression/try/exceptionToString_legacy.kt");
+            }
+
             @TestMetadata("kt22053.kt")
             public void testKt22053() throws Exception {
                 runTest("js/js.translator/testData/box/expression/try/kt22053.kt");
@@ -2705,6 +2710,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             @TestMetadata("nestedTryCatchInCatch.kt")
             public void testNestedTryCatchInCatch() throws Exception {
                 runTest("js/js.translator/testData/box/expression/try/nestedTryCatchInCatch.kt");
+            }
+
+            @TestMetadata("overrideThrowableProperties.kt")
+            public void testOverrideThrowableProperties() throws Exception {
+                runTest("js/js.translator/testData/box/expression/try/overrideThrowableProperties.kt");
             }
 
             @TestMetadata("rethrowExceptionIfNotCaught.kt")
@@ -4928,6 +4938,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             runTest("js/js.translator/testData/box/jsModule/externalClass.kt");
         }
 
+        @TestMetadata("externalClassWithDefaults.kt")
+        public void testExternalClassWithDefaults() throws Exception {
+            runTest("js/js.translator/testData/box/jsModule/externalClassWithDefaults.kt");
+        }
+
         @TestMetadata("externalFunction.kt")
         public void testExternalFunction() throws Exception {
             runTest("js/js.translator/testData/box/jsModule/externalFunction.kt");
@@ -6504,6 +6519,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             runTest("js/js.translator/testData/box/propertyAccess/packagePropertySet.kt");
         }
 
+        @TestMetadata("privateClassesWithPrivateMembers.kt")
+        public void testPrivateClassesWithPrivateMembers() throws Exception {
+            runTest("js/js.translator/testData/box/propertyAccess/privateClassesWithPrivateMembers.kt");
+        }
+
         @TestMetadata("privatePropertyAccessFromMethod.kt")
         public void testPrivatePropertyAccessFromMethod() throws Exception {
             runTest("js/js.translator/testData/box/propertyAccess/privatePropertyAccessFromMethod.kt");
@@ -6738,6 +6758,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
             runTest("js/js.translator/testData/box/reflection/kClassOnReifiedTypeInLambda.kt");
         }
 
+        @TestMetadata("kClassOnReifiedTypeInLambda-advanced.kt")
+        public void testKClassOnReifiedTypeInLambda_advanced() throws Exception {
+            runTest("js/js.translator/testData/box/reflection/kClassOnReifiedTypeInLambda-advanced.kt");
+        }
+
         @TestMetadata("kClassSimpleName.kt")
         public void testKClassSimpleName() throws Exception {
             runTest("js/js.translator/testData/box/reflection/kClassSimpleName.kt");
@@ -6746,6 +6771,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         @TestMetadata("kClassToAndFromJsClass.kt")
         public void testKClassToAndFromJsClass() throws Exception {
             runTest("js/js.translator/testData/box/reflection/kClassToAndFromJsClass.kt");
+        }
+
+        @TestMetadata("primitiveKClassOnReifiedType.kt")
+        public void testPrimitiveKClassOnReifiedType() throws Exception {
+            runTest("js/js.translator/testData/box/reflection/primitiveKClassOnReifiedType.kt");
         }
 
         @TestMetadata("primitives.kt")
@@ -6787,6 +6817,11 @@ public class BoxJsTestGenerated extends AbstractBoxJsTest {
         public static class StdlibTestSnippets extends AbstractBoxJsTest {
             private void runTest(String testDataFilePath) throws Exception {
                 KotlinTestUtils.runTest0(this::doTest, TargetBackend.JS, testDataFilePath);
+            }
+
+            @TestMetadata("abstractCollectionToArray.kt")
+            public void testAbstractCollectionToArray() throws Exception {
+                runTest("js/js.translator/testData/box/regression/stdlibTestSnippets/abstractCollectionToArray.kt");
             }
 
             public void testAllFilesPresentInStdlibTestSnippets() throws Exception {

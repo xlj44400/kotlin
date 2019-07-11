@@ -5,13 +5,13 @@
 
 package org.jetbrains.kotlin.fir.resolve
 
-import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.service
 import org.jetbrains.kotlin.fir.symbols.*
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.impl.ConeAbbreviatedTypeImpl
 import org.jetbrains.kotlin.fir.types.impl.ConeClassTypeImpl
@@ -33,6 +33,8 @@ inline fun <K, V, VA : V> MutableMap<K, V>.getOrPut(key: K, defaultValue: (K) ->
 }
 
 val FirSession.firSymbolProvider: FirSymbolProvider get() = _firSymbolProvider as FirSymbolProvider? ?: service()
+val FirSession.correspondingSupertypesCache: FirCorrespondingSupertypesCache
+    get() = _correspondingSupertypesCache as FirCorrespondingSupertypesCache? ?: service()
 
 fun ConeClassLikeLookupTag.toSymbol(useSiteSession: FirSession): ConeClassifierSymbol? {
     val firSymbolProvider = useSiteSession.firSymbolProvider
@@ -50,6 +52,8 @@ fun ConeClassifierLookupTag.toSymbol(useSiteSession: FirSession): ConeClassifier
         is ConeTypeParameterLookupTag -> this.symbol
         else -> error("sealed ${this::class}")
     }
+
+fun ConeTypeParameterLookupTag.toSymbol(): FirTypeParameterSymbol = this.symbol as FirTypeParameterSymbol
 
 fun ConeClassLikeLookupTag.constructClassType(typeArguments: Array<ConeKotlinTypeProjection>, isNullable: Boolean): ConeLookupTagBasedType {
     return ConeClassTypeImpl(this, typeArguments, isNullable)

@@ -10,7 +10,10 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrArithBuilder
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
-import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
+import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrExpressionWithCopy
 import org.jetbrains.kotlin.ir.expressions.IrTypeOperator
@@ -69,6 +72,7 @@ class TypeOperatorLowering(val context: JsIrBackendContext) : FileLoweringPass {
 
                 return when (expression.operator) {
                     IrTypeOperator.IMPLICIT_CAST -> lowerImplicitCast(expression)
+                    IrTypeOperator.IMPLICIT_DYNAMIC_CAST -> lowerImplicitDynamicCast(expression)
                     IrTypeOperator.IMPLICIT_COERCION_TO_UNIT -> lowerCoercionToUnit(expression)
                     IrTypeOperator.IMPLICIT_INTEGER_COERCION -> lowerIntegerCoercion(expression, data)
                     IrTypeOperator.IMPLICIT_NOTNULL -> lowerImplicitNotNull(expression, data)
@@ -119,6 +123,12 @@ class TypeOperatorLowering(val context: JsIrBackendContext) : FileLoweringPass {
 
             private fun lowerImplicitCast(expression: IrTypeOperatorCall) = expression.run {
                 assert(operator == IrTypeOperator.IMPLICIT_CAST)
+                argument
+            }
+
+            private fun lowerImplicitDynamicCast(expression: IrTypeOperatorCall) = expression.run {
+                // TODO check argument
+                assert(operator == IrTypeOperator.IMPLICIT_DYNAMIC_CAST)
                 argument
             }
 

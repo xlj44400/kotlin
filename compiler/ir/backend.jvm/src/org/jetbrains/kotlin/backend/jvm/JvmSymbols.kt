@@ -96,6 +96,18 @@ class JvmSymbols(
     override val getContinuation: IrSimpleFunctionSymbol
         get() = TODO("not implemented")
 
+    override val coroutineContextGetter: IrSimpleFunctionSymbol
+        get() = TODO("not implemented")
+
+    override val suspendCoroutineUninterceptedOrReturn: IrSimpleFunctionSymbol
+        get() = TODO("not implemented")
+
+    override val coroutineGetContext: IrSimpleFunctionSymbol
+        get() = TODO("not implemented")
+
+    override val returnIfSuspended: IrSimpleFunctionSymbol
+        get() = TODO("not implemented")
+
     val javaLangClass: IrClassSymbol =
         if (firMode) createClass(FqName("java.lang.Class")) {}.symbol else context.getTopLevelClass(FqName("java.lang.Class"))
 
@@ -112,6 +124,10 @@ class JvmSymbols(
     }
 
     val functionReference: IrClassSymbol = createClass(FqName("kotlin.jvm.internal.FunctionReference")) { klass ->
+        klass.addConstructor().apply {
+            addValueParameter("arity", irBuiltIns.intType)
+        }
+
         klass.addConstructor().apply {
             addValueParameter("arity", irBuiltIns.intType)
             addValueParameter("receiver", irBuiltIns.anyNType)

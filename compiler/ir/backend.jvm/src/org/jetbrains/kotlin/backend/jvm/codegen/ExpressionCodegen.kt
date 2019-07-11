@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.backend.jvm.codegen
 
 import org.jetbrains.kotlin.backend.common.ir.returnType
+import org.jetbrains.kotlin.backend.common.lower.BOUND_RECEIVER_PARAMETER
 import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
 import org.jetbrains.kotlin.backend.jvm.intrinsics.IrIntrinsicMethods
 import org.jetbrains.kotlin.backend.jvm.intrinsics.JavaClassProperty
@@ -15,6 +16,7 @@ import org.jetbrains.kotlin.backend.jvm.lower.constantValue
 import org.jetbrains.kotlin.backend.jvm.lower.inlineclasses.unboxInlineClass
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.AsmUtil.*
+import org.jetbrains.kotlin.codegen.coroutines.INVOKE_SUSPEND_METHOD_NAME
 import org.jetbrains.kotlin.codegen.inline.*
 import org.jetbrains.kotlin.codegen.inline.ReifiedTypeInliner.OperationKind.AS
 import org.jetbrains.kotlin.codegen.inline.ReifiedTypeInliner.OperationKind.SAFE_AS
@@ -22,6 +24,7 @@ import org.jetbrains.kotlin.codegen.pseudoInsns.fakeAlwaysFalseIfeq
 import org.jetbrains.kotlin.codegen.pseudoInsns.fixStackAndJump
 import org.jetbrains.kotlin.codegen.signature.BothSignatureWriter
 import org.jetbrains.kotlin.config.isReleaseCoroutines
+import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
@@ -181,6 +184,9 @@ class ExpressionCodegen(
     }
 
     private fun generateNonNullAssertions() {
+        if (state.isParamAssertionsDisabled)
+            return
+
         val isSyntheticOrBridge = irFunction.origin.isSynthetic ||
                 // Although these are accessible from Java, the functions they bridge to already have the assertions.
                 irFunction.origin == IrDeclarationOrigin.BRIDGE_SPECIAL ||
@@ -207,18 +213,29 @@ class ExpressionCodegen(
         }
         val extensionReceiverParameter = irFunction.extensionReceiverParameter
         if (extensionReceiverParameter != null) {
-            writeValueParameterInLocalVariableTable(extensionReceiverParameter, startLabel, endLabel)
+            writeValueParameterInLocalVariableTable(extensionReceiverParameter, startLabel, endLabel, true)
         }
         for (param in irFunction.valueParameters) {
-            writeValueParameterInLocalVariableTable(param, startLabel, endLabel)
+            writeValueParameterInLocalVariableTable(param, startLabel, endLabel, false)
         }
     }
 
-    private fun writeValueParameterInLocalVariableTable(param: IrValueParameter, startLabel: Label, endLabel: Label) {
+    private fun writeValueParameterInLocalVariableTable(param: IrValueParameter, startLabel: Label, endLabel: Label, isReceiver: Boolean) {
         // TODO: old code has a special treatment for destructuring lambda parameters.
         // There is no (easy) way to reproduce it with IR structures.
         // Does not show up in tests, but might come to bite us at some point.
-        val name = param.name.asString()
+
+        // If the parameter is an extension receiver parameter or a captured extension receiver from enclosing,
+        // then generate name accordingly.
+        val name = if (param.origin == BOUND_RECEIVER_PARAMETER || isReceiver) {
+            getNameForReceiverParameter(
+                irFunction.descriptor,
+                typeMapper.kotlinTypeMapper.bindingContext,
+                context.configuration.languageVersionSettings
+            )
+        } else {
+            param.name.asString()
+        }
 
         val type = typeMapper.mapType(param)
         // NOTE: we expect all value parameters to be present in the frame.
@@ -314,6 +331,7 @@ class ExpressionCodegen(
                 mv.load(0, OBJECT_TYPE)
             expression.descriptor is ConstructorDescriptor ->
                 throw AssertionError("IrCall with ConstructorDescriptor: ${expression.javaClass.simpleName}")
+            callee.isSuspend && !irFunction.isInvokeSuspendInContinuation() -> addInlineMarker(mv, isStartNotEnd = true)
         }
 
         val receiver = expression.dispatchReceiver
@@ -387,6 +405,12 @@ class ExpressionCodegen(
         }
 
         expression.markLineNumber(true)
+
+        // Do not generate redundant markers in continuation class.
+        if (callee.isSuspend && !irFunction.isInvokeSuspendInContinuation()) {
+            addSuspendMarker(mv, isStartNotEnd = true)
+        }
+
         callGenerator.genCall(
             callable,
             defaultMask.generateOnStackIfNeeded(callGenerator, callee is IrConstructor, this),
@@ -395,6 +419,12 @@ class ExpressionCodegen(
         )
 
         val returnType = callee.returnType
+
+        if (callee.isSuspend && !irFunction.isInvokeSuspendInContinuation()) {
+            addSuspendMarker(mv, isStartNotEnd = false)
+            addInlineMarker(mv, isStartNotEnd = false)
+        }
+
         return when {
             returnType.substitute(typeSubstitutionMap).isNothing() -> {
                 mv.aconst(null)
@@ -412,6 +442,9 @@ class ExpressionCodegen(
                 MaterialValue(this, callable.returnType, returnType).coerce(expression.type)
         }
     }
+
+    private fun IrFunction.isInvokeSuspendInContinuation(): Boolean =
+        name.asString() == INVOKE_SUSPEND_METHOD_NAME && parentAsClass in classCodegen.context.suspendFunctionContinuations.values
 
     override fun visitVariable(declaration: IrVariable, data: BlockInfo): PromisedValue {
         val varType = typeMapper.mapType(declaration)

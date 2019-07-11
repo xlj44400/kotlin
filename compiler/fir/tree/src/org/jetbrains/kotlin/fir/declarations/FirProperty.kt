@@ -8,11 +8,14 @@ package org.jetbrains.kotlin.fir.declarations
 import org.jetbrains.kotlin.fir.BaseTransformedType
 import org.jetbrains.kotlin.fir.VisitedSupertype
 import org.jetbrains.kotlin.fir.expressions.FirVariable
+import org.jetbrains.kotlin.fir.symbols.impl.FirBackingFieldSymbol
+import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
 
 // May be should not inherit FirVariable
 @BaseTransformedType
-interface FirProperty : @VisitedSupertype FirDeclaration, FirCallableMemberDeclaration, FirVariable, FirMemberDeclaration {
+interface FirProperty :
+    @VisitedSupertype FirDeclaration, FirCallableMemberDeclaration<FirProperty>, FirVariable<FirProperty>, FirMemberDeclaration {
     val isConst: Boolean get() = status.isConst
 
     val isLateInit: Boolean get() = status.isLateInit
@@ -23,6 +26,10 @@ interface FirProperty : @VisitedSupertype FirDeclaration, FirCallableMemberDecla
     val getter: FirPropertyAccessor
 
     val setter: FirPropertyAccessor?
+
+    val backingFieldSymbol: FirBackingFieldSymbol
+
+    fun <D> transformChildrenWithoutAccessors(transformer: FirTransformer<D>, data: D)
 
     override fun <R, D> accept(visitor: FirVisitor<R, D>, data: D): R =
         visitor.visitProperty(this, data)

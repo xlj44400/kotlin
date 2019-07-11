@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.backend.common.ir.isElseBranch
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.lower.coroutines.COROUTINE_SWITCH
 import org.jetbrains.kotlin.ir.backend.js.utils.JsGenerationContext
+import org.jetbrains.kotlin.ir.backend.js.utils.emptyScope
 import org.jetbrains.kotlin.ir.declarations.IrFunction
 import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.*
@@ -83,7 +84,7 @@ class IrElementToJsStatementTransformer : BaseIrElementToJsNodeTransformer<JsSta
         val jsCatch = aTry.catches.singleOrNull()?.let {
             val name = context.getNameForValueDeclaration(it.catchParameter)
             val jsCatchBlock = it.result.accept(this, context)
-            JsCatch(context.currentScope, name.ident, jsCatchBlock)
+            JsCatch(emptyScope, name.ident, jsCatchBlock)
         }
 
         val jsFinallyBlock = aTry.finallyExpression?.accept(this, context)?.asBlock()
@@ -128,14 +129,14 @@ class IrElementToJsStatementTransformer : BaseIrElementToJsNodeTransformer<JsSta
 
     override fun visitWhileLoop(loop: IrWhileLoop, context: JsGenerationContext): JsStatement {
         //TODO what if body null?
-        val label = context.getNameForLoop(loop)?.let { context.staticContext.rootScope.declareName(it) }
+        val label = context.getNameForLoop(loop)
         val loopStatement = JsWhile(loop.condition.accept(IrElementToJsExpressionTransformer(), context), loop.body?.accept(this, context))
         return label?.let { JsLabel(it, loopStatement) } ?: loopStatement
     }
 
     override fun visitDoWhileLoop(loop: IrDoWhileLoop, context: JsGenerationContext): JsStatement {
         //TODO what if body null?
-        val label = context.getNameForLoop(loop)?.let { context.staticContext.rootScope.declareName(it) }
+        val label = context.getNameForLoop(loop)
         val loopStatement =
             JsDoWhile(loop.condition.accept(IrElementToJsExpressionTransformer(), context), loop.body?.accept(this, context))
         return label?.let { JsLabel(it, loopStatement) } ?: loopStatement

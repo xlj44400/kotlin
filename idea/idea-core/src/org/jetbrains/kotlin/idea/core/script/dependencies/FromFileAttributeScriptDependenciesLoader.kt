@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.idea.core.script.scriptCompilationConfiguration
 import org.jetbrains.kotlin.idea.core.script.scriptDependencies
+import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
 import org.jetbrains.kotlin.scripting.resolve.ScriptCompilationConfigurationWrapper
 import org.jetbrains.kotlin.scripting.resolve.VirtualFileScriptSource
 import kotlin.script.experimental.api.asSuccess
@@ -17,7 +18,7 @@ import kotlin.script.experimental.api.asSuccess
 class FromFileAttributeScriptDependenciesLoader(project: Project) : ScriptDependenciesLoader(project) {
 
     override fun isApplicable(file: VirtualFile): Boolean {
-        return file.scriptDependencies != null
+        return file.scriptDependencies != null || file.scriptCompilationConfiguration != null
     }
 
     override fun loadDependencies(file: VirtualFile) {
@@ -26,13 +27,29 @@ class FromFileAttributeScriptDependenciesLoader(project: Project) : ScriptDepend
                 debug(file) { "refined configuration from fileAttributes = $it" }
             }
         } ?: file.scriptDependencies?.let {
-            ScriptCompilationConfigurationWrapper.FromLegacy(VirtualFileScriptSource(file), it).apply {
+            ScriptCompilationConfigurationWrapper.FromLegacy(VirtualFileScriptSource(file), it, file.findScriptDefinition(project)).apply {
                 debug(file) { "dependencies from fileAttributes = $it" }
             }
         }?.let {
-            saveToCache(file, it.asSuccess(), skipSaveToAttributes = true)
+            if (areDependenciesValid(file, it)) {
+                saveToCache(file, it.asSuccess(), skipSaveToAttributes = true)
+            }
         }
     }
 
     override fun shouldShowNotification(): Boolean = false
+
+    private fun areDependenciesValid(file: VirtualFile, configuration: ScriptCompilationConfigurationWrapper.FromLegacy): Boolean {
+        return configuration.dependenciesClassPath.all {
+            if (it.exists()) {
+                true
+            } else {
+                debug(file) {
+                    "classpath root saved to file attribute doesn't exist: ${it.path}"
+                }
+                false
+            }
+
+        }
+    }
 }

@@ -36,6 +36,7 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.ex.MessagesEx
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileVisitor
@@ -48,17 +49,18 @@ import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.idea.core.util.toPsiFile
 import org.jetbrains.kotlin.idea.j2k.IdeaJavaToKotlinServices
+import org.jetbrains.kotlin.idea.j2k.J2kPostProcessor
 import org.jetbrains.kotlin.idea.j2k.JavaToKotlinConverterFactory
 import org.jetbrains.kotlin.idea.util.application.executeWriteCommand
 import org.jetbrains.kotlin.idea.util.application.runReadAction
 import org.jetbrains.kotlin.idea.util.isRunningInCidrIde
-import org.jetbrains.kotlin.j2k.ConverterSettings
-import org.jetbrains.kotlin.j2k.FilesResult
+import org.jetbrains.kotlin.j2k.*
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.UserDataProperty
 import java.io.File
 import java.io.IOException
 import java.util.*
+import kotlin.system.measureTimeMillis
 
 var VirtualFile.pathBeforeJ2K: String? by UserDataProperty(Key.create<String>("PATH_BEFORE_J2K_CONVERSION"))
 
@@ -111,12 +113,17 @@ class JavaToKotlinAction : AnAction() {
             project: Project,
             module: Module,
             enableExternalCodeProcessing: Boolean = true,
-            askExternalCodeProcessing: Boolean = true
+            askExternalCodeProcessing: Boolean = true,
+            forceUsingOldJ2k: Boolean = false
         ): List<KtFile> {
             var converterResult: FilesResult? = null
             fun convert() {
                 val converter =
-                    JavaToKotlinConverterFactory.createJavaToKotlinConverter(
+                    if (forceUsingOldJ2k) OldJavaToKotlinConverter(
+                        project,
+                        ConverterSettings.defaultSettings,
+                        IdeaJavaToKotlinServices
+                    ) else JavaToKotlinConverterFactory.createJavaToKotlinConverter(
                         project,
                         module,
                         ConverterSettings.defaultSettings,
@@ -124,14 +131,29 @@ class JavaToKotlinAction : AnAction() {
                     )
                 converterResult = converter.filesToKotlin(
                     javaFiles,
-                    JavaToKotlinConverterFactory.createPostProcessor(formatCode = true),
+                    if (forceUsingOldJ2k) J2kPostProcessor(formatCode = true)
+                    else JavaToKotlinConverterFactory.createPostProcessor(formatCode = true),
                     progress = ProgressManager.getInstance().progressIndicator!!
+                )
+            }
+
+            fun convertWithStatistics() {
+                val conversionTime = measureTimeMillis {
+                    convert()
+                }
+                val linesCount = javaFiles.sumBy { StringUtil.getLineBreakCount(it.text) }
+                logJ2kConversionStatistics(
+                    ConversionType.FILES,
+                    JavaToKotlinConverterFactory.isNewJ2k,
+                    conversionTime,
+                    linesCount,
+                    javaFiles.size
                 )
             }
 
 
             if (!ProgressManager.getInstance().runProcessWithProgressSynchronously(
-                    ::convert,
+                    ::convertWithStatistics,
                     title,
                     true,
                     project

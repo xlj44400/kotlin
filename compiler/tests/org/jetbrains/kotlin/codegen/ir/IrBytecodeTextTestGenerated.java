@@ -1274,11 +1274,6 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
         }
 
         @TestMetadata("returnUnitInLambda.kt")
-        public void testReturnUnitInLambda_1_2() throws Exception {
-            runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/returnUnitInLambda.kt", "kotlin.coroutines.experimental");
-        }
-
-        @TestMetadata("returnUnitInLambda.kt")
         public void testReturnUnitInLambda_1_3() throws Exception {
             runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/returnUnitInLambda.kt", "kotlin.coroutines");
         }
@@ -1376,18 +1371,8 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             }
 
             @TestMetadata("complicatedMerge.kt")
-            public void testComplicatedMerge_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/complicatedMerge.kt", "kotlin.coroutines.experimental");
-            }
-
-            @TestMetadata("complicatedMerge.kt")
             public void testComplicatedMerge_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/complicatedMerge.kt", "kotlin.coroutines");
-            }
-
-            @TestMetadata("i2bResult.kt")
-            public void testI2bResult_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/i2bResult.kt", "kotlin.coroutines.experimental");
             }
 
             @TestMetadata("i2bResult.kt")
@@ -1396,18 +1381,8 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             }
 
             @TestMetadata("loadFromBooleanArray.kt")
-            public void testLoadFromBooleanArray_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/loadFromBooleanArray.kt", "kotlin.coroutines.experimental");
-            }
-
-            @TestMetadata("loadFromBooleanArray.kt")
             public void testLoadFromBooleanArray_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/loadFromBooleanArray.kt", "kotlin.coroutines");
-            }
-
-            @TestMetadata("loadFromByteArray.kt")
-            public void testLoadFromByteArray_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/loadFromByteArray.kt", "kotlin.coroutines.experimental");
             }
 
             @TestMetadata("loadFromByteArray.kt")
@@ -1416,18 +1391,8 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             }
 
             @TestMetadata("noVariableInTable.kt")
-            public void testNoVariableInTable_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/noVariableInTable.kt", "kotlin.coroutines.experimental");
-            }
-
-            @TestMetadata("noVariableInTable.kt")
             public void testNoVariableInTable_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/noVariableInTable.kt", "kotlin.coroutines");
-            }
-
-            @TestMetadata("sameIconst1ManyVars.kt")
-            public void testSameIconst1ManyVars_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/sameIconst1ManyVars.kt", "kotlin.coroutines.experimental");
             }
 
             @TestMetadata("sameIconst1ManyVars.kt")
@@ -1436,18 +1401,8 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             }
 
             @TestMetadata("usedInArrayStore.kt")
-            public void testUsedInArrayStore_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInArrayStore.kt", "kotlin.coroutines.experimental");
-            }
-
-            @TestMetadata("usedInArrayStore.kt")
             public void testUsedInArrayStore_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInArrayStore.kt", "kotlin.coroutines");
-            }
-
-            @TestMetadata("usedInMethodCall.kt")
-            public void testUsedInMethodCall_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInMethodCall.kt", "kotlin.coroutines.experimental");
             }
 
             @TestMetadata("usedInMethodCall.kt")
@@ -1456,18 +1411,8 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             }
 
             @TestMetadata("usedInPutfield.kt")
-            public void testUsedInPutfield_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInPutfield.kt", "kotlin.coroutines.experimental");
-            }
-
-            @TestMetadata("usedInPutfield.kt")
             public void testUsedInPutfield_1_3() throws Exception {
                 runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInPutfield.kt", "kotlin.coroutines");
-            }
-
-            @TestMetadata("usedInVarStore.kt")
-            public void testUsedInVarStore_1_2() throws Exception {
-                runTestWithPackageReplacement("compiler/testData/codegen/bytecodeText/coroutines/intLikeVarSpilling/usedInVarStore.kt", "kotlin.coroutines.experimental");
             }
 
             @TestMetadata("usedInVarStore.kt")
@@ -2535,6 +2480,11 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
             runTest("compiler/testData/codegen/bytecodeText/inlineClasses/resultApiDoesntUseBox.kt");
         }
 
+        @TestMetadata("resultMangling.kt")
+        public void testResultMangling() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/inlineClasses/resultMangling.kt");
+        }
+
         @TestMetadata("skipCallToUnderlyingValueOfInlineClass.kt")
         public void testSkipCallToUnderlyingValueOfInlineClass() throws Exception {
             runTest("compiler/testData/codegen/bytecodeText/inlineClasses/skipCallToUnderlyingValueOfInlineClass.kt");
@@ -3075,6 +3025,69 @@ public class IrBytecodeTextTestGenerated extends AbstractIrBytecodeTextTest {
         @TestMetadata("optimizedMultifileClassFacadeMethods.kt")
         public void testOptimizedMultifileClassFacadeMethods() throws Exception {
             runTest("compiler/testData/codegen/bytecodeText/multifileClasses/optimizedMultifileClassFacadeMethods.kt");
+        }
+    }
+
+    @TestMetadata("compiler/testData/codegen/bytecodeText/notNullAssertions")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class NotNullAssertions extends AbstractIrBytecodeTextTest {
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, TargetBackend.JVM_IR, testDataFilePath);
+        }
+
+        public void testAllFilesPresentInNotNullAssertions() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/bytecodeText/notNullAssertions"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JVM_IR, true);
+        }
+
+        @TestMetadata("arrayListGet.kt")
+        public void testArrayListGet() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/arrayListGet.kt");
+        }
+
+        @TestMetadata("assertionForNotNullCaptured.kt")
+        public void testAssertionForNotNullCaptured() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/assertionForNotNullCaptured.kt");
+        }
+
+        @TestMetadata("assertionForNotNullTypeParam.kt")
+        public void testAssertionForNotNullTypeParam() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/assertionForNotNullTypeParam.kt");
+        }
+
+        @TestMetadata("doNotGenerateParamAssertions.kt")
+        public void testDoNotGenerateParamAssertions() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/doNotGenerateParamAssertions.kt");
+        }
+
+        @TestMetadata("javaMultipleSubstitutions.kt")
+        public void testJavaMultipleSubstitutions() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/javaMultipleSubstitutions.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableCaptured.kt")
+        public void testNoAssertionForNullableCaptured() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableCaptured.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableGenericMethod.kt")
+        public void testNoAssertionForNullableGenericMethod() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableGenericMethod.kt");
+        }
+
+        @TestMetadata("noAssertionForNullableGenericMethodCall.kt")
+        public void testNoAssertionForNullableGenericMethodCall() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForNullableGenericMethodCall.kt");
+        }
+
+        @TestMetadata("noAssertionForPrivateMethod.kt")
+        public void testNoAssertionForPrivateMethod() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionForPrivateMethod.kt");
+        }
+
+        @TestMetadata("noAssertionsForKotlin.kt")
+        public void testNoAssertionsForKotlin() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/notNullAssertions/noAssertionsForKotlin.kt");
         }
     }
 

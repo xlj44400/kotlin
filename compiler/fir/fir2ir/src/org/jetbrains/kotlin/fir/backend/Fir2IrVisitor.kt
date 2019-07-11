@@ -18,16 +18,12 @@ import org.jetbrains.kotlin.fir.references.FirPropertyFromParameterCallableRefer
 import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.buildUseSiteScope
+import org.jetbrains.kotlin.fir.resolve.calls.SyntheticPropertySymbol
 import org.jetbrains.kotlin.fir.resolve.toSymbol
 import org.jetbrains.kotlin.fir.scopes.ProcessorAction
 import org.jetbrains.kotlin.fir.scopes.impl.FirClassSubstitutionScope
-import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTag
 import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTagImpl
-import org.jetbrains.kotlin.fir.symbols.ConeClassifierLookupTag
-import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirTypeAliasSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirTypeRef
@@ -36,6 +32,7 @@ import org.jetbrains.kotlin.fir.visitors.FirVisitor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.primitiveOp1
+import org.jetbrains.kotlin.ir.builders.primitiveOp2
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.*
 import org.jetbrains.kotlin.ir.descriptors.IrBuiltIns
@@ -43,7 +40,6 @@ import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.IrType
-import org.jetbrains.kotlin.ir.types.classifierOrFail
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.impl.IrErrorTypeImpl
 import org.jetbrains.kotlin.ir.types.makeNullable
@@ -206,8 +202,8 @@ internal class Fir2IrVisitor(
             processedFunctionNames += name
             useSiteScope.processFunctionsByName(name) { functionSymbol ->
                 // TODO: think about overloaded functions. May be we should process all names.
-                if (functionSymbol is FirFunctionSymbol) {
-                    val originalFunction = functionSymbol.fir as FirNamedFunction
+                if (functionSymbol is FirNamedFunctionSymbol) {
+                    val originalFunction = functionSymbol.fir
                     val origin = IrDeclarationOrigin.FAKE_OVERRIDE
                     if (functionSymbol.isFakeOverride) {
                         // Substitution case
@@ -221,7 +217,7 @@ internal class Fir2IrVisitor(
                     } else if (fakeOverrideMode != FakeOverrideMode.SUBSTITUTION) {
                         // Trivial fake override case
                         val fakeOverrideSymbol = FirClassSubstitutionScope.createFakeOverride(session, originalFunction, functionSymbol)
-                        val fakeOverrideFunction = fakeOverrideSymbol.fir as FirNamedFunction
+                        val fakeOverrideFunction = fakeOverrideSymbol.fir
 
                         val irFunction = declarationStorage.getIrFunction(
                             fakeOverrideFunction, declarationStorage.findIrParent(originalFunction), origin = origin
@@ -277,7 +273,7 @@ internal class Fir2IrVisitor(
     private fun <T : IrFunction> T.setFunctionContent(
         descriptor: FunctionDescriptor,
         firFunction: FirFunction,
-        firOverriddenSymbol: FirFunctionSymbol? = null
+        firOverriddenSymbol: FirNamedFunctionSymbol? = null
     ): T {
         setParentByParentStack()
         withParent {
@@ -394,23 +390,25 @@ internal class Fir2IrVisitor(
         // TODO: find delegated constructor correctly
         val classId = constructedClassSymbol.classId
         val provider = this@Fir2IrVisitor.session.service<FirSymbolProvider>()
-        var constructorSymbol: FirCallableSymbol? = null
+        var constructorSymbol: FirConstructorSymbol? = null
         provider.getClassUseSiteMemberScope(classId, this@Fir2IrVisitor.session, ScopeSession())!!.processFunctionsByName(
             classId.shortClassName
         ) {
-            if (arguments.size <= ((it as FirFunctionSymbol).fir as FirFunction).valueParameters.size) {
-                constructorSymbol = it
-                ProcessorAction.STOP
-            } else {
-                ProcessorAction.NEXT
+            when {
+                it !is FirConstructorSymbol -> ProcessorAction.NEXT
+                arguments.size <= it.fir.valueParameters.size -> {
+                    constructorSymbol = it
+                    ProcessorAction.STOP
+                }
+                else -> ProcessorAction.NEXT
             }
         }
-        if (constructorSymbol == null) return null
+        val foundConstructorSymbol = constructorSymbol ?: return null
         return convertWithOffsets { startOffset, endOffset ->
             IrDelegatingConstructorCallImpl(
                 startOffset, endOffset,
                 constructedIrType,
-                declarationStorage.getIrFunctionSymbol(constructorSymbol as FirFunctionSymbol) as IrConstructorSymbol
+                declarationStorage.getIrFunctionSymbol(foundConstructorSymbol) as IrConstructorSymbol
             ).apply {
                 for ((index, argument) in arguments.withIndex()) {
                     val argumentExpression = argument.toIrExpression()
@@ -458,7 +456,7 @@ internal class Fir2IrVisitor(
         }
     }
 
-    override fun visitVariable(variable: FirVariable, data: Any?): IrElement {
+    override fun <F : FirVariable<F>> visitVariable(variable: FirVariable<F>, data: Any?): IrElement {
         val irVariable = declarationStorage.createAndSaveIrVariable(variable)
         return irVariable.setParentByParentStack().apply {
             val initializer = variable.initializer
@@ -634,13 +632,27 @@ internal class Fir2IrVisitor(
         return wrappedArgumentExpression.expression.toIrExpression()
     }
 
+    private fun FirReference.statementOrigin(): IrStatementOrigin? {
+        return when (this) {
+            is FirPropertyFromParameterCallableReference -> IrStatementOrigin.INITIALIZE_PROPERTY_FROM_PARAMETER
+            is FirResolvedCallableReference -> when (coneSymbol) {
+                is FirAccessorSymbol, is SyntheticPropertySymbol -> IrStatementOrigin.GET_PROPERTY
+                else -> null
+            }
+            else -> null
+        }
+    }
+
     private fun FirQualifiedAccess.toIrExpression(typeRef: FirTypeRef): IrExpression {
         val type = typeRef.toIrType(this@Fir2IrVisitor.session, declarationStorage)
         val symbol = calleeReference.toSymbol(declarationStorage)
         return typeRef.convertWithOffsets { startOffset, endOffset ->
             when {
                 symbol is IrConstructorSymbol -> IrConstructorCallImpl.fromSymbolOwner(startOffset, endOffset, type, symbol)
-                symbol is IrSimpleFunctionSymbol -> IrCallImpl(startOffset, endOffset, type, symbol)
+                symbol is IrSimpleFunctionSymbol -> IrCallImpl(
+                    startOffset, endOffset, type, symbol, symbol.descriptor,
+                    origin = calleeReference.statementOrigin()
+                )
                 symbol is IrPropertySymbol && symbol.isBound -> {
                     val getter = symbol.owner.getter
                     if (getter != null) {
@@ -652,9 +664,7 @@ internal class Fir2IrVisitor(
                 symbol is IrFieldSymbol -> IrGetFieldImpl(startOffset, endOffset, symbol, type, origin = IrStatementOrigin.GET_PROPERTY)
                 symbol is IrValueSymbol -> IrGetValueImpl(
                     startOffset, endOffset, type, symbol,
-                    if (calleeReference is FirPropertyFromParameterCallableReference) {
-                        IrStatementOrigin.INITIALIZE_PROPERTY_FROM_PARAMETER
-                    } else null
+                    origin = calleeReference.statementOrigin()
                 )
                 else -> IrErrorCallExpressionImpl(startOffset, endOffset, type, "Unresolved reference: ${calleeReference.render()}")
             }
@@ -1073,10 +1083,7 @@ internal class Fir2IrVisitor(
             FirOperation.GT_EQ -> irBuiltIns.greaterOrEqualFunByOperandType[simpleType] to IrStatementOrigin.GTEQ
             else -> throw AssertionError("Unexpected comparison operation: $operation")
         }
-        return IrBinaryPrimitiveImpl(
-            startOffset, endOffset, booleanType, origin, symbol!!,
-            first.toIrExpression(), second.toIrExpression()
-        )
+        return primitiveOp2(startOffset, endOffset, symbol!!, booleanType, origin, first.toIrExpression(), second.toIrExpression())
     }
 
     private fun generateOperatorCall(
@@ -1104,10 +1111,7 @@ internal class Fir2IrVisitor(
         val result = if (operation in UNARY_OPERATIONS) {
             primitiveOp1(startOffset, endOffset, symbol, type, origin, arguments[0].toIrExpression())
         } else {
-            IrBinaryPrimitiveImpl(
-                startOffset, endOffset, type, origin, symbol,
-                arguments[0].toIrExpression(), arguments[1].toIrExpression()
-            )
+            primitiveOp2(startOffset, endOffset, symbol, type, origin, arguments[0].toIrExpression(), arguments[1].toIrExpression())
         }
         if (operation !in NEGATED_OPERATIONS) return result
         return primitiveOp1(startOffset, endOffset, irBuiltIns.booleanNotSymbol, booleanType, origin, result)
@@ -1141,7 +1145,7 @@ internal class Fir2IrVisitor(
 
             IrTypeOperatorCallImpl(
                 startOffset, endOffset, irType, irTypeOperator, irTypeOperand,
-                irTypeOperand.classifierOrFail, typeOperatorCall.argument.toIrExpression()
+                typeOperatorCall.argument.toIrExpression()
             )
         }
     }

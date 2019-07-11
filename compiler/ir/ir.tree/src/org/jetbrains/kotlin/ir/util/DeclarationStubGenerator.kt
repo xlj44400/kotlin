@@ -20,21 +20,24 @@ import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
-import org.jetbrains.kotlin.ir.declarations.impl.IrFieldImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.declarations.lazy.*
 import org.jetbrains.kotlin.ir.expressions.impl.IrErrorExpressionImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrExpressionBodyImpl
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DescriptorWithContainerSource
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedContainerSource
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class DeclarationStubGenerator(
     moduleDescriptor: ModuleDescriptor,
     val symbolTable: SymbolTable,
     languageVersionSettings: LanguageVersionSettings,
     private val externalDeclarationOrigin: ((DeclarationDescriptor) -> IrDeclarationOrigin)? = null,
-    private val deserializer: IrDeserializer? = null
+    private val deserializer: IrDeserializer? = null,
+    private val facadeClassGenerator: (DeserializedContainerSource) -> IrClass? = { null }
 ) {
     private val lazyTable = symbolTable.lazyWrapper
 
@@ -48,6 +51,8 @@ class DeclarationStubGenerator(
     private val typeTranslator = TypeTranslator(lazyTable, languageVersionSettings, moduleDescriptor.builtIns, LazyScopedTypeParametersResolver(lazyTable), true)
     private val constantValueGenerator = ConstantValueGenerator(moduleDescriptor, lazyTable)
 
+    private val facadeClassMap = mutableMapOf<DeserializedContainerSource, IrClass?>()
+
     init {
         typeTranslator.constantValueGenerator = constantValueGenerator
         constantValueGenerator.typeTranslator = typeTranslator
@@ -60,6 +65,19 @@ class DeclarationStubGenerator(
         }
         return symbolTable.declareExternalPackageFragment(descriptor)
     }
+
+    fun generateOrGetFacadeClass(descriptor: DeclarationDescriptor): IrClass? {
+        val packageFragment = descriptor.containingDeclaration as? PackageFragmentDescriptor ?: return null
+        val containerSource = descriptor.safeAs<DescriptorWithContainerSource>()?.containerSource ?: return null
+        return facadeClassMap.getOrPut(containerSource) {
+            facadeClassGenerator(containerSource)?.also { facade ->
+                val packageStub = generateOrGetEmptyExternalPackageFragmentStub(packageFragment)
+                facade.parent = packageStub
+                packageStub.declarations.add(facade)
+            }
+        }
+    }
+
 
     fun generateMemberStub(descriptor: DeclarationDescriptor): IrDeclaration =
         when (descriptor) {

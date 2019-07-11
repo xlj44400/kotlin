@@ -483,30 +483,21 @@ open class DeepCopyIrTreeWithSymbols(
         }
     }
 
-    private fun shallowCopyCall(expression: IrCall) =
-        when (expression) {
-            is IrCallWithShallowCopy ->
-                expression.shallowCopy(
-                    mapStatementOrigin(expression.origin),
-                    symbolRemapper.getReferencedFunction(expression.symbol),
-                    symbolRemapper.getReferencedClassOrNull(expression.superQualifierSymbol)
-                )
-            else -> {
-                val newCallee = symbolRemapper.getReferencedFunction(expression.symbol)
-                IrCallImpl(
-                    expression.startOffset, expression.endOffset,
-                    expression.type.remapType(),
-                    newCallee,
-                    newCallee.descriptor,
-                    expression.typeArgumentsCount,
-                    expression.valueArgumentsCount,
-                    mapStatementOrigin(expression.origin),
-                    symbolRemapper.getReferencedClassOrNull(expression.superQualifierSymbol)
-                ).apply {
-                    copyRemappedTypeArgumentsFrom(expression)
-                }
-            }
+    private fun shallowCopyCall(expression: IrCall): IrCall {
+        val newCallee = symbolRemapper.getReferencedFunction(expression.symbol)
+        return IrCallImpl(
+            expression.startOffset, expression.endOffset,
+            expression.type.remapType(),
+            newCallee,
+            newCallee.descriptor,
+            expression.typeArgumentsCount,
+            expression.valueArgumentsCount,
+            mapStatementOrigin(expression.origin),
+            symbolRemapper.getReferencedClassOrNull(expression.superQualifierSymbol)
+        ).apply {
+            copyRemappedTypeArgumentsFrom(expression)
         }
+    }
 
     private fun <T : IrMemberAccessExpression> T.transformReceiverArguments(original: T): T =
         apply {
@@ -618,7 +609,6 @@ open class DeepCopyIrTreeWithSymbols(
             expression.type.remapType(),
             expression.operator,
             expression.typeOperand.remapType(),
-            symbolRemapper.getReferencedClassifier(expression.typeOperandClassifier),
             expression.argument.transform()
         )
 

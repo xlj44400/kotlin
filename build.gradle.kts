@@ -182,7 +182,7 @@ extra["versions.trove4j"] = "1.0.20181211"
 extra["versions.ktor-network"] = "1.0.1"
 
 if (!project.hasProperty("versions.kotlin-native")) {
-    extra["versions.kotlin-native"] = "1.3-dev-9780"
+    extra["versions.kotlin-native"] = "1.3.50-dev-11052"
 }
 
 val isTeamcityBuild = project.kotlinBuildProperties.isTeamcityBuild
@@ -437,13 +437,8 @@ gradle.taskGraph.whenReady {
     }
 }
 
-val dist by task<Copy> {
-    val childDistTasks = getTasksByName("dist", true) - this@task
-    dependsOn(childDistTasks)
-
-    into(distDir)
-    from(files("compiler/cli/bin")) { into("kotlinc/bin") }
-    from(files("license")) { into("kotlinc/license") }
+val dist = tasks.register("dist") {
+    dependsOn(":kotlin-compiler:dist")
 }
 
 val copyCompilerToIdeaPlugin by task<Copy> {

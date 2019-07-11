@@ -1,17 +1,6 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
 package org.jetbrains.kotlin.backend.jvm.codegen
@@ -106,15 +95,22 @@ open class ClassCodegen protected constructor(
             signature.interfaces.toTypedArray()
         )
         AnnotationCodegen(this, context.state, visitor.visitor::visitAnnotation).genAnnotations(irClass, null)
-        /* TODO: Temporary workaround: ClassBuilder needs a pathless name. */
-        val shortName = File(fileEntry.name).name
-        visitor.visitSource(shortName, null)
 
         val nestedClasses = irClass.declarations.mapNotNull { declaration ->
             if (declaration is IrClass) {
                 ClassCodegen(declaration, context, this)
             } else null
         }
+
+        // Suspend function state-machine builder requires half-built continuation class
+        val continuationCodegens = nestedClasses.filter { it.irClass in context.suspendFunctionContinuations.values }
+        for (continuationCodegen in continuationCodegens) {
+            continuationCodegen.generate()
+        }
+
+        /* TODO: Temporary workaround: ClassBuilder needs a pathless name. */
+        val shortName = File(fileEntry.name).name
+        visitor.visitSource(shortName, null)
 
         val companionObjectCodegen = nestedClasses.firstOrNull { it.irClass.isCompanion }
 
@@ -124,13 +120,17 @@ open class ClassCodegen protected constructor(
 
         // Generate nested classes at the end, to ensure that codegen for companion object will have the necessary JVM signatures in its
         // trace for properties moved to the outer class
-        for (codegen in nestedClasses) {
+        for (codegen in (nestedClasses - continuationCodegens)) {
             codegen.generate()
         }
 
         generateKotlinMetadataAnnotation()
 
-        done()
+        if (irClass in context.suspendFunctionContinuations.values) {
+            context.continuationClassBuilders[irClass] = visitor
+        } else {
+            done()
+        }
     }
 
     private fun generateKotlinMetadataAnnotation() {

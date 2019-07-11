@@ -18,6 +18,10 @@ dependencies {
     testCompile(commonDep("junit:junit"))
 
     testRuntimeOnly(intellijCoreDep()) { includeJars("intellij-core") }
+
+    Platform[192].orHigher {
+        testRuntimeOnly(intellijDep()) { includeJars("platform-concurrency") }
+    }
 }
 
 sourceSets {
@@ -30,13 +34,9 @@ publish()
 runtimeJar()
 sourcesJar()
 javadocJar()
-testsJar {}
-
-dist {
-    rename("kotlin-", "")
-}
+testsJar()
 
 projectTest(parallel = true) {
-    dependsOn(":kotlin-stdlib:jvm-minimal-for-test:dist")
+    dependsOn(":dist")
     workingDir = rootDir
 }

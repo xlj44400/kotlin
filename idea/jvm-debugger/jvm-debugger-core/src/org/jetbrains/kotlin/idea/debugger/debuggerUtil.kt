@@ -12,7 +12,6 @@ import com.intellij.debugger.impl.DebuggerContextImpl
 import com.intellij.psi.PsiElement
 import com.sun.jdi.*
 import com.sun.tools.jdi.LocalVariableImpl
-import org.jetbrains.kotlin.codegen.binding.CodegenBinding
 import org.jetbrains.kotlin.codegen.binding.CodegenBinding.asmTypeForAnonymousClass
 import org.jetbrains.kotlin.codegen.coroutines.DO_RESUME_METHOD_NAME
 import org.jetbrains.kotlin.codegen.coroutines.INVOKE_SUSPEND_METHOD_NAME
@@ -20,16 +19,15 @@ import org.jetbrains.kotlin.codegen.coroutines.continuationAsmTypes
 import org.jetbrains.kotlin.codegen.inline.KOTLIN_STRATA_NAME
 import org.jetbrains.kotlin.idea.core.KotlinFileTypeFactory
 import org.jetbrains.kotlin.idea.core.util.CodeInsightUtils
-import org.jetbrains.kotlin.idea.debugger.evaluate.KotlinDebuggerCaches
 import org.jetbrains.kotlin.idea.core.util.getLineEndOffset
 import org.jetbrains.kotlin.idea.core.util.getLineStartOffset
+import org.jetbrains.kotlin.idea.debugger.evaluate.KotlinDebuggerCaches
 import org.jetbrains.kotlin.idea.util.application.runReadAction
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
-import org.jetbrains.org.objectweb.asm.Type as AsmType
 import java.util.*
 
 fun Location.isInKotlinSources(): Boolean {
@@ -60,7 +58,7 @@ fun isInsideInlineArgument(
                 val lambdaClassName = asmTypeForAnonymousClass(bindingContext, inlineArgument)
                     .internalName.substringAfterLast("/")
 
-                variableName == "-$functionName-$lambdaClassName"
+                dropInlineSuffix(variableName) == "-$functionName-$lambdaClassName"
             } else {
                 // For Kotlin up to 1.3.10
                 lambdaOrdinalByLocalVariable(variableName) == lambdaOrdinal
@@ -88,7 +86,7 @@ fun <T : Any> DebugProcessImpl.invokeInManagerThread(f: (DebuggerContextImpl) ->
 }
 
 private fun lambdaOrdinalByArgument(elementAt: KtFunction, context: BindingContext): Int {
-    val type = CodegenBinding.asmTypeForAnonymousClass(context, elementAt)
+    val type = asmTypeForAnonymousClass(context, elementAt)
     return type.className.substringAfterLast("$").toInt()
 }
 
@@ -102,6 +100,7 @@ private fun Location.visibleVariables(debugProcess: DebugProcessImpl): List<Loca
     return stackFrame.visibleVariables()
 }
 
+// For Kotlin up to 1.3.10
 private fun lambdaOrdinalByLocalVariable(name: String): Int {
     try {
         val nameWithoutPrefix = name.removePrefix(JvmAbi.LOCAL_VARIABLE_NAME_PREFIX_INLINE_ARGUMENT)
@@ -112,6 +111,7 @@ private fun lambdaOrdinalByLocalVariable(name: String): Int {
     }
 }
 
+// For Kotlin up to 1.3.10
 private fun functionNameByLocalVariable(name: String): String {
     val nameWithoutPrefix = name.removePrefix(JvmAbi.LOCAL_VARIABLE_NAME_PREFIX_INLINE_ARGUMENT)
     return nameWithoutPrefix.substringAfterLast("$", "unknown")

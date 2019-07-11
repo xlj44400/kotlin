@@ -28,7 +28,6 @@ task prepareNativeBuiltinsSources(type: Sync) {
         include "Nothing.kt"
         include "Number.kt"
         include "String.kt"
-        include "Throwable.kt"
     }
 
     into nativeBuiltinsSrcDir
@@ -159,13 +158,6 @@ artifacts {
 
 if (project.findProperty("kotlin.stdlib.js.ir.publish")?.toBoolean() == true) {
     configurePublishing(project)
-}
-
-if (project.findProperty("kotlin.stdlib.js.ir.dist")?.toBoolean() == true) {
-    configureDist(project)
-    dist {
-        from (jar, sourcesJar)
-    }
 }
 
 node {

@@ -24,10 +24,10 @@ import com.intellij.psi.stubs.StubElement
 import com.intellij.psi.util.CachedValue
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
-import com.intellij.psi.util.PsiModificationTracker.OUT_OF_CODE_BLOCK_MODIFICATION_COUNT
 import com.intellij.psi.util.PsiUtilCore
 import com.intellij.util.IncorrectOperationException
 import org.jetbrains.annotations.NonNls
+import org.jetbrains.kotlin.analyzer.KotlinModificationTrackerService
 import org.jetbrains.kotlin.asJava.ImpreciseResolveResult
 import org.jetbrains.kotlin.asJava.ImpreciseResolveResult.UNSURE
 import org.jetbrains.kotlin.asJava.LightClassGenerationSupport
@@ -55,6 +55,16 @@ import org.jetbrains.kotlin.psi.stubs.KotlinClassOrObjectStub
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import java.util.*
 import javax.swing.Icon
+
+private class KtLightClassModifierList(containingClass: KtLightClassForSourceDeclaration, computeModifiers: () -> Set<String>) :
+    KtLightModifierList<KtLightClassForSourceDeclaration>(containingClass) {
+
+    private val modifiers by lazyPub { computeModifiers() }
+
+    override fun hasModifierProperty(name: String): Boolean =
+        if (name != PsiModifier.FINAL) name in modifiers else owner.isFinal(PsiModifier.FINAL in modifiers)
+
+}
 
 abstract class KtLightClassForSourceDeclaration(
     protected val classOrObject: KtClassOrObject,
@@ -182,7 +192,7 @@ abstract class KtLightClassForSourceDeclaration(
 
     override fun getName(): String? = classOrObject.nameAsName?.asString()
 
-    private val _modifierList: PsiModifierList by lazyPub { KtLightClassModifierList(this) }
+    private val _modifierList: PsiModifierList by lazyPub { KtLightClassModifierList(this) { computeModifiers() } }
 
     override fun getModifierList(): PsiModifierList? = _modifierList
 
@@ -309,7 +319,7 @@ abstract class KtLightClassForSourceDeclaration(
                 CachedValueProvider.Result
                     .create(
                         createNoCache(classOrObject, KtUltraLightSupport.forceUsingOldLightClasses),
-                        OUT_OF_CODE_BLOCK_MODIFICATION_COUNT
+                        KotlinModificationTrackerService.getInstance(classOrObject.project).outOfBlockModificationTracker
                     )
             }
 
@@ -436,16 +446,6 @@ abstract class KtLightClassForSourceDeclaration(
 
     override val originKind: LightClassOriginKind
         get() = LightClassOriginKind.SOURCE
-
-    private class KtLightClassModifierList(containingClass: KtLightClassForSourceDeclaration) :
-        KtLightModifierList<KtLightClassForSourceDeclaration>(containingClass) {
-
-        private val modifiers by lazyPub { containingClass.computeModifiers() }
-
-        override fun hasModifierProperty(name: String): Boolean =
-            if (name != PsiModifier.FINAL) name in modifiers else owner.isFinal(PsiModifier.FINAL in modifiers)
-
-    }
 
     open fun isFinal(isFinalByPsi: Boolean): Boolean {
         // annotations can make class open via 'allopen' plugin

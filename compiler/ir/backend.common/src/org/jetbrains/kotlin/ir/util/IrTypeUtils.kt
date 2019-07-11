@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -20,18 +20,17 @@ import org.jetbrains.kotlin.ir.types.impl.makeTypeProjection
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.DFS
+import org.jetbrains.kotlin.ir.types.isNullable as irTreeTypeUtils_isNullable
 
 val kotlinPackageFqn = FqName.fromSegments(listOf("kotlin"))
-val kotlinReflectionPackageFqn = kotlinPackageFqn.child(Name.identifier("reflect"))
-val kotlinCoroutinesPackageFqn = kotlinPackageFqn.child(Name.identifier("coroutines"))
+private val kotlinReflectionPackageFqn = kotlinPackageFqn.child(Name.identifier("reflect"))
+private val kotlinCoroutinesPackageFqn = kotlinPackageFqn.child(Name.identifier("coroutines"))
 
+fun IrType.isFunction(): Boolean = this.isClassWithNamePrefix("Function", kotlinPackageFqn)
+fun IrType.isKFunction(): Boolean = this.isClassWithNamePrefix("KFunction", kotlinReflectionPackageFqn)
+fun IrType.isSuspendFunction(): Boolean = this.isClassWithNamePrefix("SuspendFunction", kotlinCoroutinesPackageFqn)
 
-fun IrType.isFunction() = this.isNameInPackage("Function", kotlinPackageFqn)
-fun IrType.isKClass() = this.isNameInPackage("KClass", kotlinReflectionPackageFqn)
-fun IrType.isKFunction() = this.isNameInPackage("KFunction", kotlinReflectionPackageFqn)
-fun IrType.isSuspendFunction() = this.isNameInPackage("SuspendFunction", kotlinCoroutinesPackageFqn)
-
-fun IrType.isNameInPackage(prefix: String, packageFqName: FqName): Boolean {
+private fun IrType.isClassWithNamePrefix(prefix: String, packageFqName: FqName): Boolean {
     val classifier = classifierOrNull ?: return false
     val name = classifier.descriptor.name.asString()
     if (!name.startsWith(prefix)) return false
@@ -39,22 +38,12 @@ fun IrType.isNameInPackage(prefix: String, packageFqName: FqName): Boolean {
     val parent = declaration.parent as? IrPackageFragment ?: return false
 
     return parent.fqName == packageFqName
-
 }
 
-fun IrType.superTypes() = classifierOrNull?.superTypes() ?: emptyList()
+private fun IrType.superTypes(): List<IrType> = classifierOrNull?.superTypes() ?: emptyList()
 
-fun IrType.typeParameterSuperTypes(): List<IrType> {
-    val classifier = classifierOrNull ?: return emptyList()
-    return when (classifier) {
-        is IrTypeParameterSymbol -> classifier.owner.superTypes
-        is IrClassSymbol -> emptyList()
-        else -> throw IllegalStateException()
-    }
-}
-
-fun IrType.isFunctionTypeOrSubtype(): Boolean = DFS.ifAny(listOf(this), { it.superTypes() }, { it.isFunction() })
-fun IrType.isSuspendFunctionTypeOrSubtype(): Boolean = DFS.ifAny(listOf(this), { it.superTypes() }, { it.isSuspendFunction() })
+fun IrType.isFunctionTypeOrSubtype(): Boolean = DFS.ifAny(listOf(this), IrType::superTypes, IrType::isFunction)
+fun IrType.isSuspendFunctionTypeOrSubtype(): Boolean = DFS.ifAny(listOf(this), IrType::superTypes, IrType::isSuspendFunction)
 
 fun IrType.isTypeParameter() = classifierOrNull is IrTypeParameterSymbol
 
@@ -62,17 +51,17 @@ fun IrType.isInterface() = classOrNull?.owner?.kind == ClassKind.INTERFACE
 
 fun IrType.isFunctionOrKFunction() = isFunction() || isKFunction()
 
-fun IrType.isNullable(): Boolean = DFS.ifAny(listOf(this), { it.typeParameterSuperTypes() }, {
-    when (it) {
-        is IrSimpleType -> it.hasQuestionMark
-        else -> it is IrDynamicType
-    }
-})
-
+@Deprecated(
+    "Use org.jetbrains.kotlin.ir.types.isNullable instead.",
+    ReplaceWith("this.isNullable()", "org.jetbrains.kotlin.ir.types.isNullable")
+)
+@Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+@kotlin.internal.LowPriorityInOverloadResolution
+fun IrType.isNullable(): Boolean = this.irTreeTypeUtils_isNullable()
 
 fun IrType.isThrowable(): Boolean = isTypeFromKotlinPackage { name -> name.asString() == "Throwable" }
 
-fun IrType.isThrowableTypeOrSubtype() = DFS.ifAny(listOf(this), IrType::superTypes, IrType::isThrowable)
+fun IrType.isThrowableTypeOrSubtype(): Boolean = DFS.ifAny(listOf(this), IrType::superTypes, IrType::isThrowable)
 
 fun IrType.isUnsigned(): Boolean = isTypeFromKotlinPackage { name -> UnsignedTypes.isShortNameOfUnsignedType(name) }
 
@@ -91,13 +80,8 @@ fun IrType.getPrimitiveArrayElementType() = (this as? IrSimpleType)?.let {
     (it.classifier.owner as? IrClass)?.fqNameWhenAvailable?.toUnsafe()?.let { fqn -> FQ_NAMES.arrayClassFqNameToPrimitiveType[fqn] }
 }
 
-fun IrType.isNonPrimitiveArray() =
-    (this.isArray() || this.isNullableArray()) && !this.isPrimitiveArray()
-
-
 fun IrType.substitute(params: List<IrTypeParameter>, arguments: List<IrType>): IrType =
     substitute(params.map { it.symbol }.zip(arguments).toMap())
-
 
 fun IrType.substitute(substitutionMap: Map<IrTypeParameterSymbol, IrType>): IrType {
     if (this !is IrSimpleType) return this
@@ -135,7 +119,7 @@ private fun collectAllSupertypes(irClass: IrClass, result: MutableSet<IrSimpleTy
     val immediateSupertypes = getImmediateSupertypes(irClass)
     result.addAll(immediateSupertypes)
     for (supertype in immediateSupertypes) {
-        supertype.classOrNull.let { collectAllSupertypes(it!!.owner, result) }
+        collectAllSupertypes(supertype.classOrNull!!.owner, result)
     }
 }
 
